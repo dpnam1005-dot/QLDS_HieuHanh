@@ -1846,7 +1846,14 @@ function showProductAnalysisModal() {
     let end = new Date(year, monthIndex + 1, 0);
     end.setHours(23, 59, 59, 999);
 
+    // Tính thời gian tháng trước
+    const prevYear = monthIndex === 0 ? year - 1 : year;
+    const prevMonthIndex = monthIndex === 0 ? 11 : monthIndex - 1;
+    let startPrev = new Date(prevYear, prevMonthIndex, 1, 0, 0, 0, 0);
+    let endPrev = new Date(prevYear, prevMonthIndex + 1, 0, 23, 59, 59, 999);
+
     const productStats = {};
+    const prevProductCounts = {};
     let totalRevenue = 0;
     let totalPurchases = 0;
 
@@ -1855,23 +1862,31 @@ function showProductAnalysisModal() {
         if (c.history && c.history.length > 0) {
             c.history.forEach(tx => {
                 const txDate = new Date(tx.date);
-                if (txDate >= start && txDate <= end && tx.amount !== 0) {
+                if (tx.amount !== 0) {
                     const productName = tx.category || c.category || 'Không rõ';
 
-                    if (!productStats[productName]) {
-                        productStats[productName] = {
-                            name: productName,
-                            count: 0,
-                            revenue: 0,
-                            customers: new Set()
-                        };
+                    // Tháng hiện tại
+                    if (txDate >= start && txDate <= end) {
+                        if (!productStats[productName]) {
+                            productStats[productName] = {
+                                name: productName,
+                                count: 0,
+                                revenue: 0,
+                                customers: new Set()
+                            };
+                        }
+
+                        productStats[productName].count++;
+                        productStats[productName].revenue += tx.amount;
+                        productStats[productName].customers.add(c.customerId);
+                        totalRevenue += tx.amount;
+                        totalPurchases++;
                     }
 
-                    productStats[productName].count++;
-                    productStats[productName].revenue += tx.amount;
-                    productStats[productName].customers.add(c.customerId);
-                    totalRevenue += tx.amount;
-                    totalPurchases++;
+                    // Tháng trước
+                    if (txDate >= startPrev && txDate <= endPrev) {
+                        prevProductCounts[productName] = (prevProductCounts[productName] || 0) + 1;
+                    }
                 }
             });
         }
@@ -1896,10 +1911,7 @@ function showProductAnalysisModal() {
     // Sắp xếp theo doanh thu
     const topByRevenue = [...productsArray].sort((a, b) => b.revenue - a.revenue).slice(0, 5);
 
-    // Top 5 sản phẩm có nhiều khách hàng mua nhất
-    const topByCustomers = [...productsArray].sort((a, b) => b.customerCount - a.customerCount).slice(0, 5);
-
-    // Populate table
+    // Populate table chi tiết sản phẩm
     const tableBody = document.getElementById('productAnalysisTableBody');
     tableBody.innerHTML = '';
 
@@ -1916,18 +1928,87 @@ function showProductAnalysisModal() {
         tableBody.appendChild(tr);
     });
 
+    // Đổ dữ liệu bảng so sánh với tháng trước
+    const allComparisonProductNames = new Set([
+        ...Object.keys(productStats),
+        ...Object.keys(prevProductCounts)
+    ]);
+
+    const comparisonList = Array.from(allComparisonProductNames).map(name => {
+        const prevCount = prevProductCounts[name] || 0;
+        const currCount = productStats[name] ? productStats[name].count : 0;
+        const diff = currCount - prevCount;
+
+        let growthRateText = '0%';
+        if (prevCount > 0) {
+            const growthRate = ((currCount - prevCount) / prevCount) * 100;
+            const sign = growthRate > 0 ? '+' : '';
+            growthRateText = `${sign}${growthRate.toFixed(0)}%`;
+        } else if (currCount > 0) {
+            growthRateText = '+100%';
+        } else {
+            growthRateText = '0%';
+        }
+
+        let diffText = '0';
+        if (diff > 0) diffText = `+${diff}`;
+        else if (diff < 0) diffText = `${diff}`;
+
+        let statusHtml = '';
+        if (diff > 0) {
+            statusHtml = '<span style="color: #16a34a; font-weight: bold;">📈 Tăng</span>';
+        } else if (diff < 0) {
+            statusHtml = '<span style="color: #dc2626; font-weight: bold;">📉 Giảm</span>';
+        } else {
+            statusHtml = '<span style="color: #64748b;">➖ Bằng</span>';
+        }
+
+        return {
+            name,
+            prevCount,
+            currCount,
+            diff,
+            diffText,
+            growthRateText,
+            statusHtml
+        };
+    });
+
+    comparisonList.sort((a, b) => b.currCount - a.currCount || b.diff - a.diff);
+
+    const comparisonTableBody = document.getElementById('productComparisonTableBody');
+    if (comparisonTableBody) {
+        comparisonTableBody.innerHTML = '';
+        if (comparisonList.length === 0) {
+            comparisonTableBody.innerHTML = `<tr><td colspan="6" style="text-align: center; color: #94a3b8; padding: 12px;">Không có dữ liệu so sánh</td></tr>`;
+        } else {
+            comparisonList.forEach(item => {
+                const tr = document.createElement('tr');
+                tr.style.borderBottom = '1px solid #e2e8f0';
+                tr.innerHTML = `
+                    <td style="padding: 8px 4px; font-weight: 600; color: var(--primary-color); font-size: 13px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;" title="${item.name}">${item.name}</td>
+                    <td style="padding: 8px 4px; text-align: center; font-size: 13px;">${item.prevCount}</td>
+                    <td style="padding: 8px 4px; text-align: center; font-weight: bold; font-size: 13px;">${item.currCount}</td>
+                    <td style="padding: 8px 4px; text-align: center; font-weight: 600; font-size: 13px; color: ${item.diff > 0 ? '#16a34a' : (item.diff < 0 ? '#dc2626' : '#475569')};">${item.diffText}</td>
+                    <td style="padding: 8px 4px; text-align: center; font-weight: 600; font-size: 13px; color: ${item.diff > 0 ? '#16a34a' : (item.diff < 0 ? '#dc2626' : '#475569')};">${item.growthRateText}</td>
+                    <td style="padding: 8px 4px; text-align: center; font-size: 13px;">${item.statusHtml}</td>
+                `;
+                comparisonTableBody.appendChild(tr);
+            });
+        }
+    }
+
     // Create charts
-    createProductCharts(topByCount, topByRevenue, productsArray, topByCustomers);
+    createProductCharts(topByCount, topByRevenue, productsArray);
 
     document.getElementById('productAnalysisModal').style.display = 'flex';
 }
 
-function createProductCharts(topByCount, topByRevenue, productsArray, topByCustomers) {
+function createProductCharts(topByCount, topByRevenue, productsArray) {
     // Destroy previous instances
     if (chartTopProductsInstance) chartTopProductsInstance.destroy();
     if (chartTopRevenueProductsInstance) chartTopRevenueProductsInstance.destroy();
     if (chartProductDistributionInstance) chartProductDistributionInstance.destroy();
-    if (chartTopProductsByCustomersInstance) chartTopProductsByCustomersInstance.destroy();
 
     // Chart 1: Top sản phẩm theo số lượt mua
     const ctx1 = document.getElementById('chartTopProducts').getContext('2d');
@@ -2036,30 +2117,6 @@ function createProductCharts(topByCount, topByRevenue, productsArray, topByCusto
                         }
                     }
                 }
-            }
-        }
-    });
-
-    // Chart 4: Top 5 sản phẩm có nhiều khách hàng mua nhất
-    const ctx4 = document.getElementById('chartTopProductsByCustomers').getContext('2d');
-    chartTopProductsByCustomersInstance = new Chart(ctx4, {
-        type: 'bar',
-        data: {
-            labels: topByCustomers.map(p => p.name),
-            datasets: [{
-                label: 'Số khách hàng',
-                data: topByCustomers.map(p => p.customerCount),
-                backgroundColor: '#f59e0b',
-                borderColor: '#d97706',
-                borderWidth: 1
-            }]
-        },
-        options: {
-            responsive: true,
-            maintainAspectRatio: false,
-            indexAxis: 'y',
-            plugins: {
-                legend: { display: false }
             }
         }
     });
@@ -2763,14 +2820,12 @@ async function exportProductAnalysisToPDF() {
     const chartTopProducts = document.getElementById('chartTopProducts');
     const chartTopRevenueProducts = document.getElementById('chartTopRevenueProducts');
     const chartProductDistribution = document.getElementById('chartProductDistribution');
-    const chartTopProductsByCustomers = document.getElementById('chartTopProductsByCustomers');
 
     const imgTopProducts = chartTopProducts ? chartTopProducts.toDataURL('image/png') : null;
     const imgTopRevenueProducts = chartTopRevenueProducts ? chartTopRevenueProducts.toDataURL('image/png') : null;
     const imgProductDistribution = chartProductDistribution ? chartProductDistribution.toDataURL('image/png') : null;
-    const imgTopProductsByCustomers = chartTopProductsByCustomers ? chartTopProductsByCustomers.toDataURL('image/png') : null;
 
-    // Lấy dữ liệu bảng
+    // Lấy dữ liệu bảng chi tiết sản phẩm
     const tableBody = document.getElementById('productAnalysisTableBody');
     const tableData = [];
     if (tableBody) {
@@ -2783,6 +2838,26 @@ async function exportProductAnalysisToPDF() {
                     cells[0].textContent.trim(),
                     cells[1].textContent.trim(),
                     cells[2].textContent.trim()
+                ]);
+            }
+        });
+    }
+
+    // Lấy dữ liệu bảng so sánh với tháng trước
+    const compTableBody = document.getElementById('productComparisonTableBody');
+    const compTableData = [];
+    if (compTableBody) {
+        const rows = compTableBody.querySelectorAll('tr');
+        rows.forEach(row => {
+            const cells = row.querySelectorAll('td');
+            if (cells.length >= 6) {
+                compTableData.push([
+                    cells[0].textContent.trim(),
+                    cells[1].textContent.trim(),
+                    cells[2].textContent.trim(),
+                    cells[3].textContent.trim(),
+                    cells[4].textContent.trim(),
+                    cells[5].textContent.trim()
                 ]);
             }
         });
@@ -2819,20 +2894,52 @@ async function exportProductAnalysisToPDF() {
         });
     }
 
-    // Row 2: Phân bố sản phẩm và top sản phẩm theo khách hàng
-    if (imgProductDistribution && imgTopProductsByCustomers) {
-        content.push({ text: 'Phân Tích Thêm', style: 'chartTitle', margin: [0, 10, 0, 5], pageBreak: 'before' });
+    // Row 2: Phân bố sản phẩm
+    if (imgProductDistribution) {
+        content.push({ text: 'Tỷ Lệ Sản Phẩm Được Mua', style: 'chartTitle', margin: [0, 10, 0, 5] });
+        content.push({ image: imgProductDistribution, width: 220, alignment: 'center', margin: [0, 0, 0, 15] });
+    }
+
+    // Row 3: Bảng so sánh sản phẩm so với tháng trước
+    if (compTableData.length > 0) {
+        content.push({ text: 'Phân Tích Sản Phẩm So Với Tháng Trước', style: 'subheader', margin: [0, 15, 0, 10] });
         content.push({
-            columns: [
-                { image: imgProductDistribution, width: 200, alignment: 'center' },
-                { image: imgTopProductsByCustomers, width: 280, alignment: 'center' }
-            ],
-            columnGap: 20,
-            margin: [0, 0, 0, 20]
+            table: {
+                headerRows: 1,
+                widths: ['25%', '15%', '15%', '15%', '15%', '15%'],
+                body: [
+                    [
+                        { text: 'Tên Sản Phẩm', style: 'tableHeader' },
+                        { text: 'SL Tháng Trước', style: 'tableHeader', alignment: 'center' },
+                        { text: 'SL Tháng Này', style: 'tableHeader', alignment: 'center' },
+                        { text: 'Chênh Lệch', style: 'tableHeader', alignment: 'center' },
+                        { text: 'Tỷ Lệ (%)', style: 'tableHeader', alignment: 'center' },
+                        { text: 'Trạng Thái', style: 'tableHeader', alignment: 'center' }
+                    ],
+                    ...compTableData.map(row => [
+                        { text: row[0], color: '#3C4A34', bold: true },
+                        { text: row[1], alignment: 'center' },
+                        { text: row[2], alignment: 'center', bold: true },
+                        { text: row[3], alignment: 'center' },
+                        { text: row[4], alignment: 'center' },
+                        { text: row[5], alignment: 'center' }
+                    ])
+                ]
+            },
+            layout: {
+                hLineWidth: () => 0.5,
+                vLineWidth: () => 0.5,
+                hLineColor: () => '#e2e8f0',
+                vLineColor: () => '#e2e8f0',
+                paddingLeft: () => 6,
+                paddingRight: () => 6,
+                paddingTop: () => 4,
+                paddingBottom: () => 4
+            }
         });
     }
 
-    // Table
+    // Table Chi tiết từng sản phẩm
     content.push({ text: 'Chi Tiết Phân Tích Từng Sản Phẩm', style: 'subheader', margin: [0, 20, 0, 10] });
     content.push({
         table: {
