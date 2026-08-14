@@ -437,113 +437,204 @@ function showKPIMilestoneModal(milestoneLevel, salesVal) {
     triggerFireworks();
 }
 
-// Hàm bắn 3 lượt pháo hoa ăn mừng mốc KPI rực rỡ
+// Hàm bắn PHÁO GIẤY TRÀN MÀN HÌNH SIÊU HOÀNH TRÁNG + Icon Trái tim bay ngợp trời
 function triggerFireworks() {
-    function launchSingleBurst() {
-        if (typeof confetti === 'function') {
-            try {
-                const count = 160;
-                const defaults = { origin: { y: 0.6 } };
-                function fire(particleRatio, opts) {
-                    confetti(Object.assign({}, defaults, opts, {
-                        particleCount: Math.floor(count * particleRatio)
-                    }));
-                }
-                fire(0.25, { spread: 35, startVelocity: 55 });
-                fire(0.2, { spread: 70 });
-                fire(0.35, { spread: 100, decay: 0.91, scalar: 0.8 });
-                fire(0.1, { spread: 120, startVelocity: 25, decay: 0.92, scalar: 1.2 });
-                fire(0.1, { spread: 120, startVelocity: 45 });
-            } catch (e) { console.warn("Lỗi hiệu ứng confetti:", e); }
+    if (typeof confetti === 'function') {
+        try {
+            // Bắn đại bác pháo giấy từ 2 bên sườn và giữa tràn ngập màn hình
+            confetti({ particleCount: 140, spread: 90, origin: { x: 0.1, y: 0.75 } });
+            confetti({ particleCount: 140, spread: 90, origin: { x: 0.9, y: 0.75 } });
+
+            setTimeout(() => {
+                confetti({ particleCount: 180, spread: 120, origin: { x: 0.5, y: 0.5 } });
+            }, 400);
+
+            setTimeout(() => {
+                confetti({ particleCount: 120, spread: 80, origin: { x: 0.25, y: 0.6 } });
+                confetti({ particleCount: 120, spread: 80, origin: { x: 0.75, y: 0.6 } });
+            }, 800);
+        } catch (e) { console.warn("Lỗi hiệu ứng confetti:", e); }
+    }
+
+    let canvas = document.getElementById('kpiFireworksCanvas');
+    if (!canvas) {
+        canvas = document.createElement('canvas');
+        canvas.id = 'kpiFireworksCanvas';
+        canvas.style.position = 'fixed';
+        canvas.style.top = '0';
+        canvas.style.left = '0';
+        canvas.style.width = '100vw';
+        canvas.style.height = '100vh';
+        canvas.style.pointerEvents = 'none';
+        canvas.style.zIndex = '999999';
+        document.body.appendChild(canvas);
+    }
+
+    const ctx = canvas.getContext('2d');
+    canvas.width = window.innerWidth;
+    canvas.height = window.innerHeight;
+
+    const paperColors = [
+        '#ef4444', '#f59e0b', '#10b981', '#3b82f6', '#8b5cf6',
+        '#ec4899', '#facc15', '#06b6d4', '#ff007f', '#a855f7', '#ff69b4', '#38bdf8'
+    ];
+    const heartEmojis = ['💖', '💕', '✨', '🌸', '👑', '💖', '🥰', '✨', '🏆', '🎉'];
+
+    let allParticles = [];
+    let floatingEmojis = [];
+
+    // Tạo 50 Icon Trái tim & Ngôi sao phủ tràn cạnh dưới bay lên
+    for (let i = 0; i < 50; i++) {
+        floatingEmojis.push({
+            x: Math.random() * canvas.width,
+            y: canvas.height + Math.random() * 250,
+            vy: -(Math.random() * 2.8 + 1.2),
+            vx: (Math.random() - 0.5) * 1.5,
+            swing: Math.random() * Math.PI * 2,
+            swingSpeed: Math.random() * 0.05 + 0.02,
+            size: Math.floor(Math.random() * 18 + 16),
+            emoji: heartEmojis[Math.floor(Math.random() * heartEmojis.length)],
+            alpha: 1,
+            decay: Math.random() * 0.004 + 0.002
+        });
+    }
+
+    // Hàm tạo pháo giấy bắn từ các súng đại bác góc nghiêng tràn màn hình
+    function launchCannonBurst(startX, startY, angleDegrees, pieceCount = 80) {
+        const baseAngle = (angleDegrees * Math.PI) / 180;
+        for (let i = 0; i < pieceCount; i++) {
+            const spreadAngle = baseAngle + (Math.random() - 0.5) * 0.9;
+            const speed = Math.random() * 14 + 5;
+            allParticles.push({
+                x: startX,
+                y: startY,
+                vx: Math.cos(spreadAngle) * speed,
+                vy: Math.sin(spreadAngle) * speed,
+                width: Math.random() * 7 + 8,
+                height: Math.random() * 5 + 6,
+                color: paperColors[Math.floor(Math.random() * paperColors.length)],
+                rotation: Math.random() * Math.PI * 2,
+                rotationSpeed: (Math.random() - 0.5) * 0.22,
+                tilt: Math.random() * Math.PI * 2,
+                tiltSpeed: Math.random() * 0.14 + 0.05,
+                alpha: 1,
+                decay: Math.random() * 0.007 + 0.003,
+                gravity: 0.1,
+                drag: 0.968
+            });
         }
+    }
 
-        let canvas = document.getElementById('kpiFireworksCanvas');
-        if (!canvas) {
-            canvas = document.createElement('canvas');
-            canvas.id = 'kpiFireworksCanvas';
-            canvas.style.position = 'fixed';
-            canvas.style.top = '0';
-            canvas.style.left = '0';
-            canvas.style.width = '100vw';
-            canvas.style.height = '100vh';
-            canvas.style.pointerEvents = 'none';
-            canvas.style.zIndex = '999999';
-            document.body.appendChild(canvas);
+    // Tạo đợt mưa pháo giấy rơi từ đỉnh màn hình xuống tràn 100% chiều rộng
+    function launchTopRain(pieceCount = 100) {
+        for (let i = 0; i < pieceCount; i++) {
+            allParticles.push({
+                x: Math.random() * canvas.width,
+                y: -Math.random() * 100,
+                vx: (Math.random() - 0.5) * 2,
+                vy: Math.random() * 3 + 2,
+                width: Math.random() * 8 + 8,
+                height: Math.random() * 6 + 6,
+                color: paperColors[Math.floor(Math.random() * paperColors.length)],
+                rotation: Math.random() * Math.PI * 2,
+                rotationSpeed: (Math.random() - 0.5) * 0.2,
+                tilt: Math.random() * Math.PI * 2,
+                tiltSpeed: Math.random() * 0.12 + 0.04,
+                alpha: 1,
+                decay: Math.random() * 0.006 + 0.003,
+                gravity: 0.06,
+                drag: 0.98
+            });
         }
+    }
 
-        const ctx = canvas.getContext('2d');
-        canvas.width = window.innerWidth;
-        canvas.height = window.innerHeight;
+    // Kịch bản 4 đợt bắn pháo ngợp trời 100% toàn màn hình
+    // Đợt 1 (0ms): Đột kích từ 2 góc dưới bên trái (bắn chéo lên phải) và bên phải (bắn chéo lên trái)
+    launchCannonBurst(canvas.width * 0.05, canvas.height * 0.85, -55, 90);
+    launchCannonBurst(canvas.width * 0.95, canvas.height * 0.85, -125, 90);
 
-        const colors = ['#f59e0b', '#ef4444', '#10b981', '#3b82f6', '#8b5cf6', '#ec4899', '#facc15', '#06b6d4'];
-        let particles = [];
+    // Đợt 2 (400ms): Bùng nổ 3 chùm trung tâm và 2 cánh
+    setTimeout(() => {
+        launchCannonBurst(canvas.width * 0.5, canvas.height * 0.6, -90, 100);
+        launchCannonBurst(canvas.width * 0.25, canvas.height * 0.7, -70, 70);
+        launchCannonBurst(canvas.width * 0.75, canvas.height * 0.7, -110, 70);
+    }, 400);
 
-        const launchSpots = [
-            { x: canvas.width * (0.15 + Math.random() * 0.1), y: canvas.height * (0.3 + Math.random() * 0.2) },
-            { x: canvas.width * (0.45 + Math.random() * 0.1), y: canvas.height * (0.25 + Math.random() * 0.2) },
-            { x: canvas.width * (0.75 + Math.random() * 0.1), y: canvas.height * (0.3 + Math.random() * 0.2) }
-        ];
+    // Đợt 3 (800ms): Cơn mưa pháo giấy rơi từ trần màn hình tràn 100% chiều rộng
+    setTimeout(() => {
+        launchTopRain(120);
+    }, 800);
 
-        launchSpots.forEach(spot => {
-            const particleCount = 45;
-            for (let i = 0; i < particleCount; i++) {
-                const angle = Math.random() * Math.PI * 2;
-                const speed = Math.random() * 9 + 2;
-                particles.push({
-                    x: spot.x,
-                    y: spot.y,
-                    vx: Math.cos(angle) * speed,
-                    vy: Math.sin(angle) * speed - 1,
-                    radius: Math.random() * 3.5 + 2,
-                    color: colors[Math.floor(Math.random() * colors.length)],
-                    alpha: 1,
-                    decay: Math.random() * 0.015 + 0.008,
-                    gravity: 0.12
-                });
+    // Đợt 4 (1200ms): Đại tiệc bùng nổ cuối cùng bao trùm 4 góc
+    setTimeout(() => {
+        launchCannonBurst(canvas.width * 0.15, canvas.height * 0.9, -60, 80);
+        launchCannonBurst(canvas.width * 0.85, canvas.height * 0.9, -120, 80);
+        launchCannonBurst(canvas.width * 0.5, canvas.height * 0.5, -90, 90);
+    }, 1200);
+
+    const startTime = Date.now();
+    function animate() {
+        ctx.clearRect(0, 0, canvas.width, canvas.height);
+        let activeCount = 0;
+
+        // 1. Vẽ các Icon Emoji Trái tim/Ngôi sao tràn ngợp bay lên
+        floatingEmojis.forEach(fe => {
+            if (fe.alpha > 0) {
+                activeCount++;
+                fe.y += fe.vy;
+                fe.swing += fe.swingSpeed;
+                fe.x += Math.sin(fe.swing) * fe.vx;
+                fe.alpha -= fe.decay;
+
+                ctx.save();
+                ctx.globalAlpha = Math.max(0, fe.alpha);
+                ctx.font = `${fe.size}px sans-serif`;
+                ctx.textAlign = 'center';
+                ctx.textBaseline = 'middle';
+                ctx.shadowBlur = 10;
+                ctx.shadowColor = 'rgba(236, 72, 153, 0.5)';
+                ctx.fillText(fe.emoji, fe.x, fe.y);
+                ctx.restore();
             }
         });
 
-        const startTime = Date.now();
-        function render() {
-            ctx.clearRect(0, 0, canvas.width, canvas.height);
-            let aliveCount = 0;
+        // 2. Vẽ các mảnh pháo giấy chữ nhật lật xoay 3D tràn ngợp màn hình
+        allParticles.forEach(p => {
+            if (p.alpha > 0) {
+                activeCount++;
+                p.x += p.vx;
+                p.y += p.vy;
+                p.vy += p.gravity;
+                p.vx *= p.drag;
+                p.vy *= p.drag;
+                p.rotation += p.rotationSpeed;
+                p.tilt += p.tiltSpeed;
+                p.alpha -= p.decay;
 
-            particles.forEach(p => {
-                if (p.alpha > 0) {
-                    aliveCount++;
-                    p.x += p.vx;
-                    p.y += p.vy;
-                    p.vy += p.gravity;
-                    p.vx *= 0.98;
-                    p.vy *= 0.98;
-                    p.alpha -= p.decay;
+                ctx.save();
+                ctx.globalAlpha = Math.max(0, p.alpha);
+                ctx.translate(p.x, p.y);
+                ctx.rotate(p.rotation);
 
-                    ctx.save();
-                    ctx.globalAlpha = Math.max(0, p.alpha);
-                    ctx.beginPath();
-                    ctx.arc(p.x, p.y, p.radius, 0, Math.PI * 2);
-                    ctx.fillStyle = p.color;
-                    ctx.shadowBlur = 10;
-                    ctx.shadowColor = p.color;
-                    ctx.fill();
-                    ctx.restore();
-                }
-            });
+                const tiltScale = Math.cos(p.tilt);
+                ctx.scale(1, tiltScale);
 
-            if (aliveCount > 0 && Date.now() - startTime < 3500) {
-                requestAnimationFrame(render);
-            } else {
-                ctx.clearRect(0, 0, canvas.width, canvas.height);
+                ctx.fillStyle = p.color;
+                ctx.shadowBlur = 6;
+                ctx.shadowColor = p.color;
+                ctx.fillRect(-p.width / 2, -p.height / 2, p.width, p.height);
+                ctx.restore();
             }
-        }
+        });
 
-        render();
+        if (activeCount > 0 && Date.now() - startTime < 6000) {
+            requestAnimationFrame(animate);
+        } else {
+            ctx.clearRect(0, 0, canvas.width, canvas.height);
+        }
     }
 
-    // Bắn tổng cộng 3 lượt pháo hoa nối tiếp nhau (Lượt 1: 0ms, Lượt 2: 750ms, Lượt 3: 1500ms)
-    launchSingleBurst();
-    setTimeout(() => launchSingleBurst(), 750);
-    setTimeout(() => launchSingleBurst(), 1500);
+    animate();
 }
 
 function closeKpiMilestoneModal() {
