@@ -623,6 +623,7 @@ const salesLabel = document.getElementById('salesLabel');
 const salesInput = document.getElementById('sales');
 const addSalesContainer = document.getElementById('addSalesContainer');
 const addSalesInput = document.getElementById('addSales');
+const salesAmountInput = document.getElementById('salesAmountInput');
 const notesInput = document.getElementById('notes');
 
 const btnSubmit = document.getElementById('btnSubmit');
@@ -639,12 +640,12 @@ let customerToDelete = null;
 function formatInputWithCommas(e) {
     let isNegative = this.value.startsWith('-');
     let rawValue = this.value.replace(/\D/g, '');
-    let formatted = rawValue ? parseInt(rawValue, 10).toString().replace(/\B(?=(\d{3})+(?!\d))/g, ",") : '';
+    let formatted = rawValue ? parseInt(rawValue, 10).toString().replace(/\B(?=(\d{3})+(?!\d))/g, ".") : '';
     if (isNegative && formatted) this.value = '-' + formatted;
     else if (isNegative && !formatted) this.value = '-';
     else this.value = formatted;
 
-    if (this.id === 'addSales') {
+    if (this.id === 'addSales' || this.id === 'salesAmountInput') {
         if (isNegative && formatted) { this.style.borderColor = '#ef4444'; this.style.color = '#ef4444'; }
         else if (!isNegative && formatted) { this.style.borderColor = '#10b981'; this.style.color = '#10b981'; }
         else { this.style.borderColor = 'var(--border-color)'; this.style.color = 'var(--text-main)'; }
@@ -653,6 +654,7 @@ function formatInputWithCommas(e) {
 
 if (salesInput) salesInput.addEventListener('input', formatInputWithCommas);
 if (addSalesInput) addSalesInput.addEventListener('input', formatInputWithCommas);
+if (salesAmountInput) salesAmountInput.addEventListener('input', formatInputWithCommas);
 
 function formatCurrency(amount) { return Number(amount).toLocaleString('vi-VN', { style: 'currency', currency: 'VND' }); }
 
@@ -858,7 +860,7 @@ function setFormData(data) {
     if (companyInput) companyInput.value = data.companyName || ''; if (classificationInput) classificationInput.value = data.classification || '';
     if (categoryInput) categoryInput.value = data.category || ''; if (productDescInput) productDescInput.value = data.productDesc || '';
     if (contactInput) contactInput.value = data.contactName || ''; if (phoneInput) phoneInput.value = data.phone ? formatPhoneNumber(data.phone) : '';
-    if (salesInput) salesInput.value = data.sales || data.sales === 0 ? data.sales.toString().replace(/\B(?=(\d{3})+(?!\d))/g, ",") : '';
+    if (salesInput) salesInput.value = data.sales || data.sales === 0 ? data.sales.toString().replace(/\B(?=(\d{3})+(?!\d))/g, ".") : '';
     if (notesInput) notesInput.value = data.notes || '';
     const addSalesEl = document.getElementById('addSales');
     if (addSalesEl) { addSalesEl.value = ''; addSalesEl.style.borderColor = 'var(--border-color)'; addSalesEl.style.color = 'var(--text-main)'; }
@@ -1200,7 +1202,7 @@ function openEditCustomerInfoModal(customer) {
     if (productDescEl) productDescEl.value = customer.productDesc || '';
     if (contactEl) contactEl.value = customer.contactName || '';
     if (phoneEl) phoneEl.value = customer.phone ? formatPhoneNumber(customer.phone) : '';
-    if (salesDisplayEl) { salesDisplayEl.value = (customer.sales || 0).toString().replace(/\B(?=(\d{3})+(?!\d))/g, ","); salesDisplayEl.readOnly = true; }
+    if (salesDisplayEl) { salesDisplayEl.value = (customer.sales || 0).toString().replace(/\B(?=(\d{3})+(?!\d))/g, "."); salesDisplayEl.readOnly = true; }
     if (notesEl) notesEl.value = customer.notes || '';
 
     const modalEl = document.getElementById('editCustomerInfoModal');
@@ -1254,9 +1256,6 @@ document.getElementById('btnCancelEditInfo')?.addEventListener('click', () => {
         showCustomerActionModal(currentActionCustomerId);
     }
 });
-document.getElementById('editCustomerInfoModal')?.addEventListener('click', (e) => {
-    if (e.target.id === 'editCustomerInfoModal') closeAllModals();
-});
 
 document.getElementById('btnCloseUpdateSalesModal')?.addEventListener('click', closeAllModals);
 document.getElementById('btnCancelUpdateSales')?.addEventListener('click', () => {
@@ -1264,9 +1263,6 @@ document.getElementById('btnCancelUpdateSales')?.addEventListener('click', () =>
     if (currentActionCustomerId) {
         showCustomerActionModal(currentActionCustomerId);
     }
-});
-document.getElementById('updateSalesModal')?.addEventListener('click', (e) => {
-    if (e.target.id === 'updateSalesModal') closeAllModals();
 });
 
 document.getElementById('btnDeleteCustomer')?.addEventListener('click', () => {
@@ -1410,9 +1406,6 @@ function closeCustomerActionModal() {
 
 document.getElementById('btnCloseCustomerActionModal')?.addEventListener('click', closeCustomerActionModal);
 document.getElementById('btnCloseCustomerActionBtn')?.addEventListener('click', closeCustomerActionModal);
-document.getElementById('customerActionModal')?.addEventListener('click', (e) => {
-    if (e.target.id === 'customerActionModal') closeCustomerActionModal();
-});
 
 // Lựa chọn 1: Chỉnh sửa thông tin khách hàng
 document.getElementById('btnOptEditInfo')?.addEventListener('click', () => {
