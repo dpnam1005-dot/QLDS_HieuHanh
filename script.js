@@ -356,6 +356,236 @@ function updateKPIBar() {
     // Cập nhật độ rộng thanh progress bar (tối đa 100%)
     const barWidth = Math.min(percentage, 100);
     kpiProgressFill.style.width = barWidth + '%';
+
+    // Kiểm tra và hiển thị popup chúc mừng mốc KPI (50%, 70%, 90%, 100%)
+    checkKPIMilestones(monthSales, displayPercentage);
+}
+
+// Cấu hình nội dung chúc mừng các mốc KPI tháng (50%, 70%, 90%, 100%)
+const milestoneConfig = {
+    50: {
+        badge: '🎉 BỨT PHÁ 50% CHỈ TIÊU KPI 🎉',
+        title: 'Cố gắng lên nhé Hiếu Hạnh! 💕',
+        desc: (salesText) => `Hiếu Hạnh đã xuất sắc chinh phục <strong>50% chỉ tiêu KPI tháng</strong> (<span id="kpi50SalesVal" style="color: #d97706; font-weight: 800;">${salesText}</span>)!<br>Chỉ còn một nửa chặng đường nữa thôi, Mochi và mọi người tin chắc Hiếu Hạnh sẽ bứt phá cán đích 100% rực rỡ! 🚀🔥`,
+        btnText: 'Cố gắng lên nhé Hiếu Hạnh! 🔥',
+        btnBg: 'linear-gradient(135deg, #D97706 0%, #B45309 100%)',
+        badgeBg: 'linear-gradient(90deg, #D97706, #F59E0B)',
+        borderColor: '#FCD34D',
+        contentBg: 'linear-gradient(180deg, #FFFFFF 0%, #FFFBEB 100%)'
+    },
+    70: {
+        badge: '🚀 VƯỢT MỐC 70% CHỈ TIÊU KPI 🚀',
+        title: 'Xuất sắc lắm Hiếu Hạnh ơi! 🌟',
+        desc: (salesText) => `Hiếu Hạnh đã ấn tượng vượt mốc <strong>70% chỉ tiêu KPI tháng</strong> (<span id="kpi50SalesVal" style="color: #2563eb; font-weight: 800;">${salesText}</span>)!<br>Đã rất gần đích 650M rồi, tiếp tục tăng tốc bứt phá nhé Hiếu Hạnh ơi! 💥💪`,
+        btnText: 'Tiếp tục tăng tốc thôi nào! 🚀',
+        btnBg: 'linear-gradient(135deg, #2563EB 0%, #1D4ED8 100%)',
+        badgeBg: 'linear-gradient(90deg, #2563EB, #3B82F6)',
+        borderColor: '#93C5FD',
+        contentBg: 'linear-gradient(180deg, #FFFFFF 0%, #EFF6FF 100%)'
+    },
+    90: {
+        badge: '🔥 CHẠM MỐC 90% KPI - SẮP CÁN ĐÍCH 🔥',
+        title: 'Siêu đỉnh Hiếu Hạnh ơi! 🏆',
+        desc: (salesText) => `Hiếu Hạnh đã cán mốc ngoạn mục <strong>90% chỉ tiêu KPI tháng</strong> (<span id="kpi50SalesVal" style="color: #7c3aed; font-weight: 800;">${salesText}</span>)!<br>Chỉ còn 10% nữa thôi là hoàn thành target 650M! Về đích rực rỡ nào! 🎉✨`,
+        btnText: 'Cùng Mochi về đích rực rỡ! 🏁',
+        btnBg: 'linear-gradient(135deg, #7C3AED 0%, #6D28D9 100%)',
+        badgeBg: 'linear-gradient(90deg, #7C3AED, #8B5CF6)',
+        borderColor: '#C4B5FD',
+        contentBg: 'linear-gradient(180deg, #FFFFFF 0%, #F5F3FF 100%)'
+    },
+    100: {
+        badge: '🏆 CHÍNH THỨC CÁN ĐÍCH 100% KPI 🏆',
+        title: 'HOÀN THÀNH 100% KPI XUẤT SẮC! 🎉',
+        desc: (salesText) => `Chúc mừng Hiếu Hạnh đã xuất sắc chinh phục trọn vẹn <strong>100% chỉ tiêu KPI tháng (650M)</strong> với doanh số <span id="kpi50SalesVal" style="color: #10b981; font-weight: 800;">${salesText}</span>!<br>Bạn thật sự là một ngôi sao bán hàng tỏa sáng rực rỡ nhất! 🥳💖👑`,
+        btnText: 'Tuyệt vời số 1 Hiếu Hạnh ơi! 💖',
+        btnBg: 'linear-gradient(135deg, #10B981 0%, #059669 100%)',
+        badgeBg: 'linear-gradient(90deg, #10B981, #34D399)',
+        borderColor: '#6EE7B7',
+        contentBg: 'linear-gradient(180deg, #FFFFFF 0%, #ECFDF5 100%)'
+    }
+};
+
+function showKPIMilestoneModal(milestoneLevel, salesVal) {
+    const modal = document.getElementById('kpi50MilestoneModal');
+    const badge = document.getElementById('kpiMilestoneBadge');
+    const title = document.getElementById('kpiMilestoneTitle');
+    const desc = document.getElementById('kpiMilestoneDesc');
+    const btn = document.getElementById('btnCloseKpi50Modal');
+    const content = modal?.querySelector('.kpi-milestone-content');
+
+    if (!modal || !milestoneConfig[milestoneLevel]) return;
+
+    const config = milestoneConfig[milestoneLevel];
+    const formattedSales = formatCurrency(salesVal !== undefined ? salesVal : getCurrentMonthSales());
+
+    if (badge) {
+        badge.innerHTML = config.badge;
+        badge.style.background = config.badgeBg;
+    }
+    if (title) title.innerHTML = config.title;
+    if (desc) desc.innerHTML = config.desc(formattedSales);
+    if (btn) {
+        btn.innerHTML = config.btnText;
+        btn.style.background = config.btnBg;
+    }
+    if (content) {
+        content.style.background = config.contentBg;
+        content.style.borderColor = config.borderColor;
+    }
+
+    modal.style.display = 'flex';
+    triggerFireworks();
+}
+
+// Hàm bắn 3 lượt pháo hoa ăn mừng mốc KPI rực rỡ
+function triggerFireworks() {
+    function launchSingleBurst() {
+        if (typeof confetti === 'function') {
+            try {
+                const count = 160;
+                const defaults = { origin: { y: 0.6 } };
+                function fire(particleRatio, opts) {
+                    confetti(Object.assign({}, defaults, opts, {
+                        particleCount: Math.floor(count * particleRatio)
+                    }));
+                }
+                fire(0.25, { spread: 35, startVelocity: 55 });
+                fire(0.2, { spread: 70 });
+                fire(0.35, { spread: 100, decay: 0.91, scalar: 0.8 });
+                fire(0.1, { spread: 120, startVelocity: 25, decay: 0.92, scalar: 1.2 });
+                fire(0.1, { spread: 120, startVelocity: 45 });
+            } catch (e) { console.warn("Lỗi hiệu ứng confetti:", e); }
+        }
+
+        let canvas = document.getElementById('kpiFireworksCanvas');
+        if (!canvas) {
+            canvas = document.createElement('canvas');
+            canvas.id = 'kpiFireworksCanvas';
+            canvas.style.position = 'fixed';
+            canvas.style.top = '0';
+            canvas.style.left = '0';
+            canvas.style.width = '100vw';
+            canvas.style.height = '100vh';
+            canvas.style.pointerEvents = 'none';
+            canvas.style.zIndex = '999999';
+            document.body.appendChild(canvas);
+        }
+
+        const ctx = canvas.getContext('2d');
+        canvas.width = window.innerWidth;
+        canvas.height = window.innerHeight;
+
+        const colors = ['#f59e0b', '#ef4444', '#10b981', '#3b82f6', '#8b5cf6', '#ec4899', '#facc15', '#06b6d4'];
+        let particles = [];
+
+        const launchSpots = [
+            { x: canvas.width * (0.15 + Math.random() * 0.1), y: canvas.height * (0.3 + Math.random() * 0.2) },
+            { x: canvas.width * (0.45 + Math.random() * 0.1), y: canvas.height * (0.25 + Math.random() * 0.2) },
+            { x: canvas.width * (0.75 + Math.random() * 0.1), y: canvas.height * (0.3 + Math.random() * 0.2) }
+        ];
+
+        launchSpots.forEach(spot => {
+            const particleCount = 45;
+            for (let i = 0; i < particleCount; i++) {
+                const angle = Math.random() * Math.PI * 2;
+                const speed = Math.random() * 9 + 2;
+                particles.push({
+                    x: spot.x,
+                    y: spot.y,
+                    vx: Math.cos(angle) * speed,
+                    vy: Math.sin(angle) * speed - 1,
+                    radius: Math.random() * 3.5 + 2,
+                    color: colors[Math.floor(Math.random() * colors.length)],
+                    alpha: 1,
+                    decay: Math.random() * 0.015 + 0.008,
+                    gravity: 0.12
+                });
+            }
+        });
+
+        const startTime = Date.now();
+        function render() {
+            ctx.clearRect(0, 0, canvas.width, canvas.height);
+            let aliveCount = 0;
+
+            particles.forEach(p => {
+                if (p.alpha > 0) {
+                    aliveCount++;
+                    p.x += p.vx;
+                    p.y += p.vy;
+                    p.vy += p.gravity;
+                    p.vx *= 0.98;
+                    p.vy *= 0.98;
+                    p.alpha -= p.decay;
+
+                    ctx.save();
+                    ctx.globalAlpha = Math.max(0, p.alpha);
+                    ctx.beginPath();
+                    ctx.arc(p.x, p.y, p.radius, 0, Math.PI * 2);
+                    ctx.fillStyle = p.color;
+                    ctx.shadowBlur = 10;
+                    ctx.shadowColor = p.color;
+                    ctx.fill();
+                    ctx.restore();
+                }
+            });
+
+            if (aliveCount > 0 && Date.now() - startTime < 3500) {
+                requestAnimationFrame(render);
+            } else {
+                ctx.clearRect(0, 0, canvas.width, canvas.height);
+            }
+        }
+
+        render();
+    }
+
+    // Bắn tổng cộng 3 lượt pháo hoa nối tiếp nhau (Lượt 1: 0ms, Lượt 2: 750ms, Lượt 3: 1500ms)
+    launchSingleBurst();
+    setTimeout(() => launchSingleBurst(), 750);
+    setTimeout(() => launchSingleBurst(), 1500);
+}
+
+function closeKpiMilestoneModal() {
+    const modal = document.getElementById('kpi50MilestoneModal');
+    if (modal) modal.style.display = 'none';
+}
+
+function checkKPIMilestones(monthSales, percentage) {
+    const milestones = [100, 90, 70, 50]; // Ưu tiên mốc cao nhất đạt được
+    const now = new Date();
+    const currentMonthKey = `${now.getFullYear()}_${now.getMonth() + 1}`;
+    const storageKey = `kpi_milestones_shown_${currentMonthKey}`;
+
+    let shownMilestones = [];
+    try {
+        shownMilestones = JSON.parse(localStorage.getItem(storageKey) || '[]');
+    } catch (e) {
+        shownMilestones = [];
+    }
+
+    const reached = milestones.filter(m => percentage >= m);
+    if (reached.length === 0) return;
+
+    // Tìm mốc cao nhất đã đạt được mà CHƯA từng hiển thị thông báo chúc mừng trong tháng này
+    const milestoneToShow = reached.find(m => !shownMilestones.includes(m));
+
+    if (milestoneToShow) {
+        // Đánh dấu tất cả mốc <= milestoneToShow là đã ghi nhận để không lặp lại
+        reached.forEach(m => {
+            if (!shownMilestones.includes(m)) {
+                shownMilestones.push(m);
+            }
+        });
+        try {
+            localStorage.setItem(storageKey, JSON.stringify(shownMilestones));
+        } catch (e) {
+            console.warn("Không thể lưu trạng thái mốc KPI:", e);
+        }
+
+        // Bật popup chúc mừng cho mốc này
+        showKPIMilestoneModal(milestoneToShow, monthSales);
+    }
 }
 
 // Quản lý bóng thoại Mochi nhắn các câu chúc cổ vũ Hiếu Hạnh
@@ -403,11 +633,16 @@ document.getElementById('kpiCatRunner')?.addEventListener('click', () => {
     showMochiBubble("Anh iu bé nhiềuuu 💕");
     const monthSales = getCurrentMonthSales();
     const pct = Math.round((monthSales / KPI_TARGET) * 100);
-    let msg = `<strong style="font-size: 15px; color: #d97706;">Hiếu Hạnh cố lên nhé! 💕</strong><br><br>Mochi đang chạy đua để cùng bạn đạt mốc KPI 650M tháng này! Hiện tại đã chạy đạt <strong style="color: #10b981;">${pct}%</strong> rồi nè! 🚀🔥`;
-    if (pct >= 100) {
-        msg = `<strong style="font-size: 15px; color: #10b981;">XUẤT SẮC QUÁ HIẾU HẠNH ƠI! 🎉</strong><br><br>Hiếu Hạnh đã đưa Mochi chạy cán đích <strong>100% chỉ tiêu KPI 650M</strong> rồi! Thật tự hào quá! 🥳💰`;
+
+    const milestones = [100, 90, 70, 50];
+    const currentMilestone = milestones.find(m => pct >= m);
+
+    if (currentMilestone) {
+        showKPIMilestoneModal(currentMilestone, monthSales);
+    } else {
+        let msg = `<strong style="font-size: 15px; color: #d97706;">Hiếu Hạnh cố lên nhé! 💕</strong><br><br>Mochi đang chạy đua để cùng bạn đạt mốc KPI 650M tháng này! Hiện tại đã chạy đạt <strong style="color: #10b981;">${pct}%</strong> rồi nè! 🚀🔥`;
+        showNotification("Mochi Cổ Vũ KPI 🐾", msg);
     }
-    showNotification("Mochi Cổ Vũ KPI 🐾", msg);
 });
 
 // ========== LOADING BAR FUNCTIONS ==========
@@ -1058,6 +1293,10 @@ if (form) {
 }
 
 document.getElementById('btnCloseNotification')?.addEventListener('click', function () { notificationModal.style.display = 'none'; });
+document.getElementById('btnCloseKpi50Modal')?.addEventListener('click', closeKpiMilestoneModal);
+document.getElementById('kpi50MilestoneModal')?.addEventListener('click', (e) => {
+    if (e.target.id === 'kpi50MilestoneModal') closeKpiMilestoneModal();
+});
 document.getElementById('btnCloseHistoryModal')?.addEventListener('click', closeAllModals);
 document.getElementById('btnCloseHistoryBtn')?.addEventListener('click', () => {
     document.getElementById('historyModal').style.display = 'none';
@@ -1171,7 +1410,7 @@ document.getElementById('btnCancelEdit')?.addEventListener('click', function () 
 let currentActionCustomerId = null;
 
 function closeAllModals() {
-    const modalIds = ['customerActionModal', 'editCustomerInfoModal', 'updateSalesModal', 'customerFormModal', 'reportModal', 'analysisModal', 'productAnalysisModal', 'historyModal', 'duplicateModal', 'deleteModal', 'warningModal', 'notificationModal', 'excelImportModal'];
+    const modalIds = ['customerActionModal', 'editCustomerInfoModal', 'updateSalesModal', 'customerFormModal', 'reportModal', 'analysisModal', 'productAnalysisModal', 'historyModal', 'duplicateModal', 'deleteModal', 'warningModal', 'notificationModal', 'excelImportModal', 'kpi50MilestoneModal'];
     modalIds.forEach(id => {
         const el = document.getElementById(id);
         if (el) el.style.display = 'none';
