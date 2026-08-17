@@ -681,10 +681,10 @@ function checkKPIMilestones(monthSales, percentage) {
 
 // Quản lý bóng thoại Mochi nhắn các câu chúc cổ vũ Hiếu Hạnh
 const mochiQuotes = [
-    "Anh iu bé nhiềuuu 💕",
-    "Hiếu Hạnh của anh là giỏi nhất ✨🥰",
-    "Uống thêm nước nhoa bé 🥛💕",
-    "Nghỉ tay nhắm mắt nghỉ ngơi một xíu nhoa bé 😴💖",
+    "Hiếu Hạnh đỉnh quó đi💕",
+    "Hiếu Hạnh là giỏi nhất ✨🥰",
+    "Uống thêm nước nào🥛💕",
+    "Nghỉ tay nhắm mắt nghỉ ngơi một xíu nhé😴💖",
     "Hiếu Hạnh cố lên nhé 🐾🔥",
     "Mochi luôn đồng hành cùng Hiếu Hạnh ✨",
     "Quyết tâm cán đích 650M rực rỡ 🚀💰",
