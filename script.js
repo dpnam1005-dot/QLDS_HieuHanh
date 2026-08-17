@@ -681,10 +681,10 @@ function checkKPIMilestones(monthSales, percentage) {
 
 // Quản lý bóng thoại Mochi nhắn các câu chúc cổ vũ Hiếu Hạnh
 const mochiQuotes = [
-    "Hiếu Hạnh đỉnh quó đi💕",
-    "Hiếu Hạnh là giỏi nhất ✨🥰",
-    "Uống thêm nước nào🥛💕",
-    "Nghỉ tay nhắm mắt nghỉ ngơi một xíu nhé😴💖",
+    "Anh iu bé nhiềuuu 💕",
+    "Hiếu Hạnh của anh là giỏi nhất ✨🥰",
+    "Uống thêm nước nhoa bé 🥛💕",
+    "Nghỉ tay nhắm mắt nghỉ ngơi một xíu nhoa bé 😴💖",
     "Hiếu Hạnh cố lên nhé 🐾🔥",
     "Mochi luôn đồng hành cùng Hiếu Hạnh ✨",
     "Quyết tâm cán đích 650M rực rỡ 🚀💰",
@@ -717,11 +717,11 @@ setInterval(() => {
 
 // Hiện bóng thoại đầu tiên sau 2 giây khi vừa mở trang
 setTimeout(() => {
-    showMochiBubble("Hiếu Hạnh đỉnh quó đi 💕");
+    showMochiBubble("Anh iu bé nhiềuuu 💕");
 }, 2000);
 
 document.getElementById('kpiCatRunner')?.addEventListener('click', () => {
-    showMochiBubble("Hiếu Hạnh đỉnh quó đi 💕");
+    showMochiBubble("Anh iu bé nhiềuuu 💕");
     const monthSales = getCurrentMonthSales();
     const pct = Math.round((monthSales / KPI_TARGET) * 100);
 
@@ -1912,9 +1912,7 @@ function showRevenueReport() {
                 const formattedTime = item.date.toLocaleString('vi-VN', { day: '2-digit', month: '2-digit', year: 'numeric', hour: '2-digit', minute: '2-digit' });
                 totalRevenuePeriod += Number(tx.amount || 0);
                 const tr = document.createElement('tr');
-                tr.style.cursor = 'pointer';
-                tr.onclick = () => { if (c && c.customerId) showCustomerActionModal(c.customerId); };
-                tr.innerHTML = `<td style="padding: 12px; border-bottom: 1px solid #e2e8f0; font-size: 13px; text-align: center;">${formattedTime}</td><td style="padding: 12px; border-bottom: 1px solid #e2e8f0; font-weight: bold; color: var(--primary-color);" class="customer-id-cell" title="Click để thao tác">${c.customerId || '-'}</td><td style="padding: 12px; border-bottom: 1px solid #e2e8f0;">${c.companyName || '-'}</td><td style="padding: 12px; border-bottom: 1px solid #e2e8f0; text-align: right; white-space: nowrap;">${formatSalesScaledByMagnitude(tx.amount)}</td><td style="padding: 12px; border-bottom: 1px solid #e2e8f0; font-size: 13px;">${tx.note || '-'}</td>`;
+                tr.innerHTML = `<td style="padding: 12px; border-bottom: 1px solid #e2e8f0; font-size: 13px; text-align: center;">${formattedTime}</td><td style="padding: 12px; border-bottom: 1px solid #e2e8f0; font-weight: bold; color: var(--primary-color);" class="customer-id-cell">${c.customerId || '-'}</td><td style="padding: 12px; border-bottom: 1px solid #e2e8f0;">${c.companyName || '-'}</td><td style="padding: 12px; border-bottom: 1px solid #e2e8f0; text-align: right; white-space: nowrap;">${formatSalesScaledByMagnitude(tx.amount)}</td><td style="padding: 12px; border-bottom: 1px solid #e2e8f0; font-size: 13px;">${tx.note || '-'}</td>`;
                 reportTableBody.appendChild(tr);
             });
             const reportTotalEl = document.getElementById('reportTotalRevenue');
@@ -2131,10 +2129,8 @@ function showAnalysisModal() {
         activeCustomersList.forEach(item => {
             const tr = document.createElement('tr');
             tr.style.borderBottom = '1px solid #e2e8f0';
-            tr.style.cursor = 'pointer';
-            tr.onclick = () => { if (item && item.customerId) showCustomerActionModal(item.customerId); };
             tr.innerHTML = `
-                <td style="width: 75% !important; max-width: 75% !important; padding: 10px 8px; font-weight: bold; color: var(--primary-color); text-align: left; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;" class="customer-id-cell" title="Click để thao tác">${item.customerId}</td>
+                <td style="width: 75% !important; max-width: 75% !important; padding: 10px 8px; font-weight: bold; color: var(--primary-color); text-align: left; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;" class="customer-id-cell">${item.customerId}</td>
                 <td style="width: 25% !important; max-width: 25% !important; padding: 10px 8px; text-align: right; white-space: nowrap;">${formatSalesScaledByMagnitude(item.amount)}</td>
             `;
             analysisTableBody.appendChild(tr);

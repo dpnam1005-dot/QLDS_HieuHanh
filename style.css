@@ -555,8 +555,7 @@ tbody tr:hover { background-color: #F8F3ED; cursor: pointer; }
     transition: opacity 0.15s;
 }
 .customer-id-cell:hover {
-    text-decoration: underline;
-    opacity: 0.85;
+    opacity: 0.75;
 }
 
 /* Styling cho datalist dropdown hiện đại */
