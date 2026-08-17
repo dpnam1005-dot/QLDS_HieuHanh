@@ -717,11 +717,11 @@ setInterval(() => {
 
 // Hiện bóng thoại đầu tiên sau 2 giây khi vừa mở trang
 setTimeout(() => {
-    showMochiBubble("Anh iu bé nhiềuuu 💕");
+    showMochiBubble("Hiếu Hạnh đỉnh quó đi 💕");
 }, 2000);
 
 document.getElementById('kpiCatRunner')?.addEventListener('click', () => {
-    showMochiBubble("Anh iu bé nhiềuuu 💕");
+    showMochiBubble("Hiếu Hạnh đỉnh quó đi 💕");
     const monthSales = getCurrentMonthSales();
     const pct = Math.round((monthSales / KPI_TARGET) * 100);
 
