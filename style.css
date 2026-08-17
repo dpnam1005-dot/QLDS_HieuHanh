@@ -1,3 +1,4 @@
+@import url('https://fonts.googleapis.com/css2?family=Be+Vietnam+Pro:ital,wght@0,100;0,200;0,300;0,400;0,500;0,600;0,700;0,800;0,900;1,100;1,200;1,300;1,400;1,500;1,600;1,700;1,800;1,900&display=swap');
 @import url('https://fonts.googleapis.com/css2?family=Roboto+Mono:wght@400;500;600;700;800&display=swap');
 
 /* CSS Hệ thống - Florenté Warm Natural Aesthetic */
@@ -12,7 +13,7 @@
     --accent-warm: #C8B29B;
     --accent-terracotta: #A67B5B;
 }
-* { box-sizing: border-box; margin: 0; padding: 0; font-family: 'DM Sans', -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif; }
+* { box-sizing: border-box; margin: 0; padding: 0; font-family: 'Be Vietnam Pro', -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif; }
 
 /* Áp dụng Font Roboto Mono (Monospaced Numbers) giúp tất cả chữ số có ĐỘ RỘNG BẰNG NHAU 100% (Số 1 rộng bằng số 5, số 8, số 0) */
 .sf-pro-num,
@@ -27,9 +28,7 @@
 #sales,
 .amount-text,
 .table-sales-val,
-.sales-cheer-gif-text,
-#salesTable td:nth-child(4),
-#salesTable td:nth-child(2) {
+.sales-cheer-gif-text {
     font-family: 'Roboto Mono', 'SFMono-Regular', Consolas, 'Liberation Mono', Menlo, monospace !important;
     font-weight: 700 !important;
     font-variant-numeric: tabular-nums lining-nums !important;
@@ -63,7 +62,7 @@ body { background-color: var(--bg-color); color: var(--text-main); padding: 20px
     font-weight: 800;
     letter-spacing: -0.4px;
     margin: 0;
-    font-family: 'DM Sans', -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+    font-family: 'Be Vietnam Pro', -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
 }
 .nav-tabs {
     display: flex;
@@ -231,7 +230,7 @@ tbody tr:hover { background-color: #F8F3ED; cursor: pointer; }
     min-height: 100vh;
     background-color: #F4ECE1;
     padding: 20px;
-    font-family: 'DM Sans', -apple-system, BlinkMacSystemFont, sans-serif;
+    font-family: 'Be Vietnam Pro', -apple-system, BlinkMacSystemFont, sans-serif;
 }
 .auth-card {
     background: #FFFFFF;
@@ -683,7 +682,7 @@ input[list]::-webkit-calendar-picker-indicator {
     font-weight: 800;
     color: #64748B;
     letter-spacing: 0.5px;
-    font-family: 'DM Sans', -apple-system, sans-serif;
+    font-family: 'Be Vietnam Pro', -apple-system, sans-serif;
     text-transform: uppercase;
 }
 
@@ -694,7 +693,7 @@ input[list]::-webkit-calendar-picker-indicator {
     background: #FEF3C7;
     padding: 1px 7px;
     border-radius: 6px;
-    font-family: 'DM Sans', -apple-system, sans-serif;
+    font-family: 'Be Vietnam Pro', -apple-system, sans-serif;
     border: 1px solid #FDE68A;
 }
 
@@ -757,7 +756,7 @@ input[list]::-webkit-calendar-picker-indicator {
     pointer-events: none;
     transition: all 0.35s cubic-bezier(0.34, 1.56, 0.64, 1);
     z-index: 100;
-    font-family: 'DM Sans', -apple-system, sans-serif;
+    font-family: 'Be Vietnam Pro', -apple-system, sans-serif;
 }
 
 .kpi-cat-speech::after {
@@ -815,7 +814,7 @@ input[list]::-webkit-calendar-picker-indicator {
     font-size: 14px;
     font-weight: 900;
     color: #0F172A;
-    font-family: 'DM Sans', -apple-system, sans-serif;
+    font-family: 'Be Vietnam Pro', -apple-system, sans-serif;
     letter-spacing: -0.2px;
 }
 
@@ -886,7 +885,7 @@ input[list]::-webkit-calendar-picker-indicator {
 }
 
 .sales-cheer-gif-text {
-    font-family: 'DM Sans', -apple-system, sans-serif;
+    font-family: 'Be Vietnam Pro', -apple-system, sans-serif;
     font-size: 12px;
     font-weight: 800;
     color: #C2410C;
@@ -901,16 +900,17 @@ input[list]::-webkit-calendar-picker-indicator {
     color: #DC2626;
 }
 
-/* Modal Chúc Mừng Mốc 50% KPI */
+/* Modal Chúc Mừng Mốc KPI - Ultra Premium Design */
 .kpi-milestone-content {
-    max-width: 480px;
+    max-width: 490px;
     text-align: center;
-    padding: 32px 24px;
-    background: linear-gradient(180deg, #FFFFFF 0%, #FFFBEB 100%);
-    border-radius: 20px;
-    border: 2px solid #FCD34D;
-    box-shadow: 0 20px 40px rgba(217, 119, 6, 0.25);
-    animation: milestonePopIn 0.5s cubic-bezier(0.34, 1.56, 0.64, 1);
+    padding: 36px 28px;
+    background: linear-gradient(180deg, rgba(255, 255, 255, 0.98) 0%, rgba(255, 251, 235, 0.98) 100%);
+    backdrop-filter: blur(16px);
+    border-radius: 24px;
+    border: 2px solid rgba(252, 211, 77, 0.8);
+    box-shadow: 0 25px 60px -10px rgba(217, 119, 6, 0.35), 0 0 40px rgba(245, 158, 11, 0.2);
+    animation: milestonePopIn 0.6s cubic-bezier(0.34, 1.56, 0.64, 1);
     position: relative;
     overflow: hidden;
 }
@@ -918,7 +918,7 @@ input[list]::-webkit-calendar-picker-indicator {
 @keyframes milestonePopIn {
     0% {
         opacity: 0;
-        transform: scale(0.7) translateY(20px);
+        transform: scale(0.6) translateY(30px);
     }
     100% {
         opacity: 1;
@@ -928,51 +928,59 @@ input[list]::-webkit-calendar-picker-indicator {
 
 .kpi-milestone-badge {
     display: inline-block;
-    padding: 6px 16px;
-    background: linear-gradient(90deg, #D97706, #F59E0B);
+    padding: 8px 22px;
+    background: linear-gradient(90deg, #D97706, #F59E0B, #EC4899);
+    background-size: 200% 100%;
     color: #FFFFFF;
-    font-size: 13px;
+    font-size: 13.5px;
     font-weight: 900;
-    border-radius: 20px;
-    letter-spacing: 0.5px;
-    box-shadow: 0 4px 12px rgba(217, 119, 6, 0.3);
-    margin-bottom: 16px;
+    border-radius: 30px;
+    letter-spacing: 0.8px;
+    box-shadow: 0 6px 16px rgba(217, 119, 6, 0.35);
+    margin-bottom: 18px;
+    animation: badgeShimmer 3s ease infinite alternate;
+}
+
+@keyframes badgeShimmer {
+    0% { background-position: 0% 50%; }
+    100% { background-position: 100% 50%; }
 }
 
 .kpi-milestone-mochi {
     display: flex;
     justify-content: center;
-    margin-bottom: 12px;
+    margin-bottom: 14px;
 }
 
 .kpi-mochi-gif {
-    height: 75px;
+    height: 85px;
     width: auto;
     object-fit: contain;
-    filter: drop-shadow(0 6px 12px rgba(0, 0, 0, 0.15));
+    filter: drop-shadow(0 8px 16px rgba(0, 0, 0, 0.18));
     animation: mochiCelebrationDance 0.8s ease-in-out infinite alternate;
 }
 
 @keyframes mochiCelebrationDance {
     0% {
-        transform: translateY(0) scale(1);
+        transform: translateY(0) scale(1) rotate(-2deg);
     }
     100% {
-        transform: translateY(-8px) scale(1.08);
+        transform: translateY(-10px) scale(1.1) rotate(2deg);
     }
 }
 
 .kpi-milestone-title {
-    font-size: 22px;
+    font-size: 23px;
     font-weight: 900;
-    color: #1B362B;
-    margin: 0 0 12px 0;
-    font-family: 'DM Sans', -apple-system, sans-serif;
+    color: #1E293B;
+    margin: 0 0 14px 0;
+    font-family: 'Be Vietnam Pro', -apple-system, sans-serif;
+    letter-spacing: -0.3px;
 }
 
 .kpi-milestone-desc {
-    font-size: 14px;
-    line-height: 1.6;
+    font-size: 14.5px;
+    line-height: 1.65;
     color: #475569;
     margin: 0;
 }
