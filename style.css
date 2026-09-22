@@ -35,8 +35,36 @@
     letter-spacing: -0.5px;
 }
 
-body { background-color: var(--bg-color); color: var(--text-main); padding: 20px; line-height: 1.5; }
-.container { max-width: 1600px; width: 98%; margin: 0 auto; }
+body { background-color: var(--bg-color); color: var(--text-main); padding: 14px 12px; line-height: 1.45; }
+.container { max-width: 1840px; width: calc(100% - 8px); margin: 0 auto; }
+
+/* Tối ưu riêng màn 21 inch Full HD (khoảng 1600-1920px): vừa khít 1 màn hình, không cuộn ngang */
+@media (min-width: 1400px) {
+    body { padding: 12px; }
+    .container { max-width: 1840px; }
+    .main-header { padding: 10px 16px; margin-bottom: 14px; gap: 12px; flex-wrap: nowrap; overflow: visible; }
+    .header-left { gap: 10px; flex-wrap: nowrap; overflow: visible; min-width: 0; }
+    .nav-tabs { flex-shrink: 0; }
+    .nav-tab { padding: 7px 14px; font-size: 13.5px; white-space: nowrap; }
+    .kpi-bar-container { flex: 0 0 auto; min-width: 400px; padding: 4px 14px; gap: 10px; overflow: visible; }
+    .kpi-progress-bar { width: 150px; flex-shrink: 0; overflow: visible; }
+    .kpi-value { white-space: nowrap; font-size: 13.5px; }
+    .kpi-left-group, .kpi-right-group { flex-shrink: 0; }
+    .sales-cheer-gif-group { flex: 1 1 auto; min-width: 0; overflow-x: auto; overflow-y: visible; gap: 4px; }
+    .sales-cheer-gif-container { height: 34px; padding: 2px 7px 2px 4px; }
+    .sales-cheer-gif { height: 26px; }
+    .sales-cheer-gif-text { font-size: 10.5px; }
+    .table-section { padding: 18px 20px; }
+    .table-header-flex { margin-bottom: 12px; flex-wrap: nowrap; }
+    .table-header-flex h2 { font-size: 19px; white-space: nowrap; }
+    .header-actions { flex-wrap: nowrap; gap: 7px; }
+    .search-box { width: 220px; }
+    table { min-width: 100%; }
+    th, td { padding: 10px 12px; font-size: 13.5px; }
+    .table-container { max-height: calc(100vh - 260px); overflow-y: auto; }
+    table thead th { position: sticky; top: 0; z-index: 3; }
+    .pagination-container { margin-top: 14px; }
+}
 
 /* Navigation Tabs & Header */
 .main-header {
@@ -155,6 +183,8 @@ body { background-color: var(--bg-color); color: var(--text-main); padding: 20px
 .btn-export-pdf:hover:not(:disabled) { background-color: #AF8557; }
 .btn-report-month { background-color: #A67B5B; color: white; }
 .btn-report-month:hover:not(:disabled) { background-color: #8E6547; }
+.btn-history { background-color: #64748B; color: white; border: 1px solid #64748B; }
+.btn-history:hover:not(:disabled) { background-color: #475569; border-color: #475569; transform: translateY(-1px); }
 .btn-sm { padding: 8px 14px; font-size: 13px; width: auto; border-radius: 6px; }
 .edit-actions { display: none; gap: 10px; }
 .table-header-flex { display: flex; justify-content: space-between; align-items: center; margin-bottom: 15px; flex-wrap: wrap; gap: 10px; }
@@ -203,8 +233,24 @@ body { background-color: var(--bg-color); color: var(--text-main); padding: 20px
     background: #fee2e2;
 }
 .table-container { overflow-x: auto; }
-table { width: 100%; min-width: 1200px; border-collapse: collapse; }
-th, td { padding: 12px 14px; text-align: left; border-bottom: 1px solid var(--border-color); font-size: 14px; vertical-align: middle; }
+table { width: 100%; min-width: 1200px; border-collapse: collapse; table-layout: fixed; }
+th, td { padding: 10px 12px; text-align: left; border-bottom: 1px solid var(--border-color); font-size: 14px; vertical-align: middle; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+/* Cố định chiều cao mỗi dòng để chuyển trang không nhảy lên/xuống */
+#tableBody tr { height: 52px; }
+#tableBody td { overflow: hidden; text-overflow: ellipsis; }
+/* STT thu gọn để ưu tiên Mã KH + Tên công ty */
+#pageRanking table thead th:nth-child(1), #pageRanking table tbody td:nth-child(1) { width: 42px; min-width: 42px; max-width: 42px; padding-left: 6px; padding-right: 6px; text-align: center; }
+#pageRanking table thead th:nth-child(2), #pageRanking table tbody td:nth-child(2) { width: 16%; min-width: 150px; }
+#pageRanking table thead th:nth-child(3), #pageRanking table tbody td:nth-child(3) { width: 10%; min-width: 90px; }
+#pageRanking table thead th:nth-child(4), #pageRanking table tbody td:nth-child(4) { width: 24%; min-width: 200px; white-space: normal; line-height: 1.35; }
+#pageRanking table thead th:nth-child(5), #pageRanking table tbody td:nth-child(5) { width: 10%; min-width: 90px; }
+#pageRanking table thead th:nth-child(6), #pageRanking table tbody td:nth-child(6) { width: 9%; min-width: 95px; }
+#pageRanking table thead th:nth-child(7), #pageRanking table tbody td:nth-child(7) { width: 14%; min-width: 130px; }
+#pageRanking table thead th:nth-child(8), #pageRanking table tbody td:nth-child(8) { width: auto; }
+/* Dòng đệm giữ đủ 10 dòng/trang, không hover, không click */
+.table-filler-row { pointer-events: none; cursor: default; }
+.table-filler-row td { border-bottom: 1px solid var(--border-color); }
+tbody tr.table-filler-row:hover { background-color: transparent; cursor: default; }
 .nowrap { white-space: nowrap; }
 .col-company { min-width: 200px; }
 .col-notes { min-width: 150px; }
@@ -213,7 +259,40 @@ tbody tr:hover { background-color: #F8F3ED; cursor: pointer; }
 .text-right { text-align: right; }
 .text-center { text-align: center; }
 .money { color: #3C4A34; font-weight: 700; }
-.pagination-container { display: flex; justify-content: center; align-items: center; margin-top: 20px; gap: 5px; }
+.pagination-container { display: flex; justify-content: center; align-items: center; margin-top: 20px; gap: 5px; min-height: 34px; }
+/* Vùng bảng chính luôn chiếm trọn khoảng trắng phía dưới, phân trang dính đáy nên không còn hụt */
+#pageRanking .table-section { display: flex; flex-direction: column; min-height: calc(100vh - 190px); }
+#pageRanking .table-container { flex: 1; }
+#pageRanking .pagination-container { margin-top: auto; padding-top: 14px; }
+/* Màn 21 inch: bảng cao vừa khít, không dồn khoảng trắng xuống đáy trang */
+@media (min-width: 1400px) {
+    #pageRanking .table-section { min-height: calc(100vh - 160px); }
+}
+/* ========== DASHBOARD ========== */
+#dashboardKpiGrid { grid-template-columns: repeat(4, 1fr); }
+.dash-kpi-card { background: #fff; border: 1px solid #e2e8f0; border-radius: 10px; padding: 12px 14px; box-shadow: 0 1px 3px rgba(0,0,0,0.03); }
+.dash-kpi-label { font-size: 11px; color: var(--text-muted); font-weight: 800; letter-spacing: 0.3px; margin-bottom: 4px; }
+.dash-kpi-value { font-size: 17px; font-weight: 800; color: var(--text-main); }
+.dash-kpi-sub { font-size: 11px; color: var(--text-muted); margin-top: 4px; border-top: 1px solid #f1f5f9; padding-top: 4px; }
+.dash-row-item { display: flex; justify-content: space-between; align-items: center; gap: 8px; padding: 8px 0; border-bottom: 1px solid #f1f5f9; }
+.dash-row-item:last-child { border-bottom: none; }
+/* Dashboard vừa khít màn 21 inch: 4 KPI + biểu đồ gói trong 1 màn hình */
+@media (min-width: 1400px) {
+    #dashboardKpiGrid { grid-template-columns: repeat(4, 1fr); gap: 10px; margin-bottom: 12px; }
+    .dash-kpi-card { padding: 10px 12px; }
+    .dash-kpi-value { font-size: 15.5px; }
+    .dashboard-charts-grid { gap: 12px !important; margin-bottom: 12px !important; }
+    .dashboard-tables-grid { gap: 12px !important; }
+    #chartDashboardTrend { max-height: 220px; }
+}
+@media (max-width: 1100px) {
+    #dashboardKpiGrid { grid-template-columns: repeat(2, 1fr); }
+    .dashboard-charts-grid, .dashboard-tables-grid { grid-template-columns: 1fr !important; }
+}
+@media (max-width: 560px) {
+    #dashboardKpiGrid { grid-template-columns: 1fr 1fr; gap: 8px; }
+    .dash-kpi-value { font-size: 14px; }
+}
 .page-btn { padding: 6px 12px; border: 1px solid var(--border-color); background: white; color: var(--text-main); border-radius: 6px; cursor: pointer; font-size: 14px; transition: all 0.2s; }
 .page-btn:hover:not(.active):not(:disabled) { background: #F5EFE8; }
 .history-btn-icon:hover { border-color: var(--primary-color) !important; color: var(--primary-color) !important; background-color: #F3ECE2 !important; }
@@ -223,7 +302,42 @@ tbody tr:hover { background-color: #F8F3ED; cursor: pointer; }
 .modal-content { background: white; padding: 24px; border-radius: 12px; width: 400px; max-width: 90%; border: 1px solid var(--border-color); box-shadow: 0 10px 30px rgba(0,0,0,0.1); }
 .modal-actions { margin-top: 20px; display: flex; justify-content: flex-end; gap: 10px; }
 .modal-actions .btn { width: auto; }
-@media (max-width: 768px) { .table-section { min-width: 100%; } }
+/* ========== RESPONSIVE: giữ nguyên desktop, chỉ nới lỏng layout trên màn nhỏ ========== */
+@media (max-width: 1100px) {
+    .table-section { min-width: 100%; }
+    .main-header { flex-wrap: wrap; gap: 12px; }
+    .header-left { flex-wrap: wrap; }
+    .header-actions { width: 100%; }
+}
+@media (max-width: 768px) {
+    body { padding: 12px; }
+    .container { width: 100%; }
+    .main-header { padding: 12px; }
+    .header-left { width: 100%; }
+    .header-right { width: 100%; justify-content: flex-end; }
+    .nav-tabs { width: 100%; }
+    .nav-tab { flex: 1; justify-content: center; padding: 8px 10px; font-size: 13px; }
+    .kpi-bar-container { width: 100%; height: auto; min-height: 38px; flex-wrap: wrap; row-gap: 6px; }
+    .kpi-progress-bar { width: 100%; min-width: 120px; }
+    .sales-cheer-gif-group { width: 100%; overflow-x: auto; padding-bottom: 2px; }
+    .table-section { min-width: 100%; padding: 14px; }
+    .table-header-flex { align-items: flex-start; }
+    .table-header-flex h2 { font-size: 18px; }
+    .header-actions { align-items: stretch; }
+    .search-box-wrapper, .search-box { width: 100%; }
+    .header-actions .btn { flex: 1 1 46%; text-align: center; justify-content: center; }
+    .table-container { margin: 0 -14px; padding: 0 14px; -webkit-overflow-scrolling: touch; }
+    table { min-width: 760px; }
+    th, td { padding: 9px 10px; font-size: 13px; }
+    .modal-content { width: 100%; max-width: 94vw; padding: 18px; max-height: 92vh; overflow-y: auto; }
+    .customer-form-modal, .update-sales-modal { width: 100%; max-width: 94vw; padding: 18px; }
+    .form-row { flex-direction: column; }
+    .sales-item-row > div:first-child, .sales-item-row > div:nth-child(2) { flex-direction: column; align-items: stretch !important; }
+    .modal-actions { flex-wrap: wrap; }
+    .modal-actions .btn { flex: 1 1 100%; }
+    .pagination-container { flex-wrap: wrap; }
+    .auth-card { padding: 28px 20px; }
+}
 /* CSS Màn hình đăng nhập Florenté Light Mode */
 .auth-container {
     display: flex;
@@ -258,6 +372,10 @@ tbody tr:hover { background-color: #F8F3ED; cursor: pointer; }
 
 /* Modal Thao tác Khách hàng & Form Thêm/Sửa đẹp chuẩn theo hình */
 .modal-overlay { z-index: 1000; }
+/* Modal vừa khít chiều cao màn 21 inch (1080p trừ taskbar/trình duyệt) */
+@media (min-width: 1400px) and (min-height: 700px) {
+    .modal-content, .customer-form-modal, .update-sales-modal { max-height: 86vh; }
+}
 #reportModal, #analysisModal { z-index: 1000; }
 #customerActionModal { z-index: 1100; }
 #editCustomerInfoModal, #updateSalesModal, #customerFormModal { z-index: 1150; }

@@ -36,6 +36,16 @@
         <header class="main-header">
             <div class="header-left">
                 <nav class="nav-tabs">
+                    <button type="button" id="tabDashboard" class="nav-tab">
+                        <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none"
+                            stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
+                            <rect x="3" y="3" width="7" height="9"></rect>
+                            <rect x="14" y="3" width="7" height="5"></rect>
+                            <rect x="14" y="12" width="7" height="9"></rect>
+                            <rect x="3" y="16" width="7" height="5"></rect>
+                        </svg>
+                        <span>Tổng Quan</span>
+                    </button>
                     <button type="button" id="tabRanking" class="nav-tab active">
                         <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none"
                             stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
@@ -81,7 +91,7 @@
                         title="Bùng cháy sales cùng mascot cute! Click để nhận lời chúc!">
                         <img src="https://i.pinimg.com/originals/af/f3/91/aff391dceedffc9fb178aab85e04ef21.gif"
                             alt="Cute Sales GIF 1" class="sales-cheer-gif">
-                        <span class="sales-cheer-gif-text">Hiếu Hạnh cố lên! 🔥</span>
+                        <span class="sales-cheer-gif-text">Hạnh ơi cố lên! 🔥</span>
                     </div>
                     <div class="sales-cheer-gif-container" id="cheerGifBadge2"
                         title="Quyết tâm chốt đơn bùng nổ! Click để nhận lời chúc!">
@@ -102,6 +112,55 @@
                     xuất</button>
             </div>
         </header>
+
+        <!-- TRANG TỔNG QUAN: Dashboard tái dùng dữ liệu customers/history sẵn có -->
+        <div id="pageDashboard" class="app-page" style="display: none;">
+            <section class="table-section" style="min-width: 100%;">
+                <div class="table-header-flex">
+                    <div>
+                        <h2 style="margin: 0;">Tổng Quan Kinh Doanh</h2>
+                        <div id="dashboardSub" style="font-size: 12px; color: var(--text-muted); font-weight: 600; margin-top: 2px;"></div>
+                    </div>
+                    <div class="header-actions">
+                        <select id="dashboardPeriodType"
+                            style="padding: 8px 12px; border-radius: 6px; border: 1px solid var(--border-color); font-size: 13px; cursor: pointer; font-weight: 700; color: var(--text-main); background: #fff;">
+                            <option value="month" selected>Tháng này</option>
+                            <option value="day">Hôm nay</option>
+                            <option value="week">Tuần này</option>
+                            <option value="year">Năm nay</option>
+                        </select>
+                        <button type="button" id="btnDashboardReport" class="btn btn-report-month btn-sm">Mở báo cáo</button>
+                        <button type="button" id="btnDashboardAnalysis" class="btn btn-primary btn-sm">Phân tích KH</button>
+                        <button type="button" id="btnDashboardProducts" class="btn btn-import-excel btn-sm">Phân tích SP</button>
+                    </div>
+                </div>
+                <div id="dashboardKpiGrid" style="display: grid; grid-template-columns: repeat(4, 1fr); gap: 12px; margin-bottom: 16px;"></div>
+                <div style="display: grid; grid-template-columns: 1.2fr 1fr; gap: 16px; margin-bottom: 16px;" class="dashboard-charts-grid">
+                    <div style="background: #fff; border: 1px solid #e2e8f0; border-radius: 10px; padding: 16px;">
+                        <h4 style="margin: 0 0 10px 0; font-size: 14px;">Doanh thu 12 kỳ gần nhất</h4>
+                        <div style="position: relative; height: 250px;"><canvas id="chartDashboardTrend"></canvas></div>
+                    </div>
+                    <div style="background: #fff; border: 1px solid #e2e8f0; border-radius: 10px; padding: 16px; display: flex; flex-direction: column; align-items: center;">
+                        <h4 style="margin: 0 0 10px 0; font-size: 14px; width: 100%; text-align: left;">Tỉ trọng phân loại KH</h4>
+                        <div style="position: relative; width: 100%; max-width: 250px; height: 250px;"><canvas id="chartDashboardClass"></canvas></div>
+                    </div>
+                </div>
+                <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 16px;" class="dashboard-tables-grid">
+                    <div style="background: #fff; border: 1px solid #e2e8f0; border-radius: 10px; padding: 16px;">
+                        <h4 style="margin: 0 0 10px 0; font-size: 14px;">Top 5 khách hàng trong kỳ</h4>
+                        <div id="dashboardTopCustomers" style="font-size: 13px;"></div>
+                    </div>
+                    <div style="background: #fff; border: 1px solid #e2e8f0; border-radius: 10px; padding: 16px;">
+                        <h4 style="margin: 0 0 10px 0; font-size: 14px;">Top 5 sản phẩm trong kỳ</h4>
+                        <div id="dashboardTopProducts" style="font-size: 13px;"></div>
+                    </div>
+                </div>
+                <div style="background: #fff; border: 1px solid #e2e8f0; border-radius: 10px; padding: 16px; margin-top: 16px;">
+                    <h4 style="margin: 0 0 10px 0; font-size: 14px;">Hoạt động gần nhất</h4>
+                    <div id="dashboardRecentActivity" style="font-size: 13px;"></div>
+                </div>
+            </section>
+        </div>
 
         <!-- TRANG CHÍNH: BẢNG XẾP HẠNG DOANH SỐ -->
         <div id="pageRanking" class="app-page">
@@ -134,8 +193,19 @@
                         <button type="button" id="btnExportPDF" class="btn btn-export-pdf btn-sm">Xuất PDF</button>
 
                         <span style="border-left: 1px solid #cbd5e1; height: 24px; margin: 0 4px;"></span>
-                        <button type="button" id="btnReportMonth" class="btn btn-report-month btn-sm">Báo cáo
-                            Tháng</button>
+                        <button type="button" id="btnReportMonth" class="btn btn-report-month btn-sm">Báo
+                            cáo</button>
+                        <button type="button" id="btnActivityHistory" class="btn btn-history btn-sm"
+                            style="display: inline-flex; align-items: center; gap: 6px;" title="Xem lịch sử thao tác toàn hệ thống">
+                            <svg xmlns="http://www.w3.org/2000/svg" width="15" height="15" viewBox="0 0 24 24"
+                                fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round"
+                                stroke-linejoin="round">
+                                <polyline points="1 4 1 10 7 10" />
+                                <path d="M3.51 15a9 9 0 1 0 2.13-9.36L1 10" />
+                                <path d="M12 7v5l3 3" />
+                            </svg>
+                            <span>Lịch sử</span>
+                        </button>
                     </div>
                 </div>
 
@@ -281,12 +351,24 @@
 
             <form id="updateSalesForm">
                 <div class="form-group-custom form-group">
-                    <label for="salesAmountInput">Cập nhật doanh số phát sinh (VNĐ) *</label>
-                    <input type="text" id="salesAmountInput" class="form-control-custom" required
-                        placeholder="Ví dụ: 5.000.000 (Dùng dấu – nếu giảm)">
+                    <label>Danh sách sản phẩm phát sinh (VNĐ) *</label>
+                    <div id="salesItemsList" style="display: flex; flex-direction: column; gap: 10px;"></div>
+                    <button type="button" id="btnAddSalesItem" class="btn-cancel-sales"
+                        style="margin-top: 10px; width: auto; padding: 8px 16px; font-size: 13px;">+ Thêm sản phẩm
+                        (mua nhiều loại cùng lúc)</button>
+                    <div
+                        style="margin-top: 10px; background: #F8FAFC; border: 1px dashed #CBD5E1; border-radius: 8px; padding: 10px 12px; display: flex; justify-content: space-between; align-items: center;">
+                        <span style="font-size: 13px; font-weight: 700; color: #475569;">Tổng đợt này:</span>
+                        <span id="salesBatchTotal"
+                            style="font-size: 15px; font-weight: 800; color: #059669; font-family: 'Roboto Mono', monospace;">0
+                            ₫</span>
+                    </div>
+                    <!-- Giữ input cũ ở dạng ẩn để tương thích code cũ/autocomplete -->
+                    <input type="text" id="salesAmountInput" class="form-control-custom" placeholder="Ví dụ: 5.000.000 (Dùng dấu – nếu giảm)"
+                        style="display: none;">
                 </div>
 
-                <div class="form-group-custom form-group">
+                <div class="form-group-custom form-group" style="display: none;">
                     <label for="salesCategorySelect">Tên sản phẩm</label>
                     <input type="text" id="salesCategorySelect" class="form-control-custom" list="salesCategoryDatalist"
                         placeholder="Nhập hoặc chọn tên sản phẩm...">
@@ -299,7 +381,7 @@
                     </datalist>
                 </div>
 
-                <div class="form-group-custom form-group">
+                <div class="form-group-custom form-group" style="display: none;">
                     <label for="salesProductDescInput">Mô tả sản phẩm</label>
                     <input type="text" id="salesProductDescInput" class="form-control-custom"
                         list="salesProductDescDatalist"
@@ -368,10 +450,23 @@
                     </div>
                 </div>
 
-                <!-- Row 3: Tên sản phẩm & Mô tả sản phẩm -->
-                <div class="form-row">
-                    <div class="form-group-custom form-group" style="flex: 1;">
-                        <label for="category">Tên sản phẩm</label>
+                <!-- Row 3: Danh sách sản phẩm ban đầu (khách mới có thể mua nhiều loại cùng lúc) -->
+                <div class="form-group-custom form-group">
+                    <label>Danh sách sản phẩm ban đầu</label>
+                    <div id="newCustomerItemsList" style="display: flex; flex-direction: column; gap: 10px;"></div>
+                    <button type="button" id="btnAddNewCustomerItem" class="btn-cancel-sales"
+                        style="margin-top: 10px; width: auto; padding: 8px 16px; font-size: 13px;">+ Thêm sản phẩm
+                        (mua nhiều loại cùng lúc)</button>
+                    <div
+                        style="margin-top: 10px; background: #F8FAFC; border: 1px dashed #CBD5E1; border-radius: 8px; padding: 10px 12px; display: flex; justify-content: space-between; align-items: center;">
+                        <span style="font-size: 13px; font-weight: 700; color: #475569;">Tổng doanh số ban
+                            đầu:</span>
+                        <span id="newCustomerBatchTotal"
+                            style="font-size: 15px; font-weight: 800; color: #059669; font-family: 'Roboto Mono', monospace;">0
+                            ₫</span>
+                    </div>
+                    <!-- Giữ 2 input + datalist cũ ở dạng ẩn để tương thích code cũ/autocomplete -->
+                    <div style="display: none;">
                         <input type="text" id="category" class="form-control-custom" list="categoryDatalist"
                             placeholder="Nhập hoặc chọn tên sản phẩm...">
                         <datalist id="categoryDatalist">
@@ -381,9 +476,6 @@
                             <option value="Dịch vụ / Sửa chữa">
                             <option value="Khác">
                         </datalist>
-                    </div>
-                    <div class="form-group-custom form-group" style="flex: 1;">
-                        <label for="productDesc">Mô tả sản phẩm</label>
                         <input type="text" id="productDesc" class="form-control-custom" list="productDescDatalist"
                             placeholder="Nhập hoặc chọn mô tả (ví dụ: HP M404dn)...">
                         <datalist id="productDescDatalist"></datalist>
@@ -402,11 +494,12 @@
                     </div>
                 </div>
 
-                <!-- Row 5: Doanh số -->
+                <!-- Row 5: Doanh số (tự động cộng từ danh sách sản phẩm phía trên) -->
                 <div class="form-row">
                     <div class="form-group-custom form-group" id="salesContainer" style="flex: 1;">
-                        <label id="salesLabel" for="sales">Doanh số ban đầu (VNĐ)</label>
-                        <input type="text" id="sales" class="form-control-custom" placeholder="0">
+                        <label id="salesLabel" for="sales">Doanh số ban đầu (VNĐ) - Tự động từ danh sách SP</label>
+                        <input type="text" id="sales" class="form-control-custom" placeholder="0" readonly
+                            style="background: #F1F5F9; color: #1E293B; font-weight: 600; cursor: not-allowed;">
                     </div>
                 </div>
 
@@ -445,12 +538,150 @@
         </div>
     </div>
 
+    <!-- Modal Lịch sử thao tác toàn hệ thống (V1: gộp từ customers[].history) -->
+    <div id="activityHistoryModal" class="modal-overlay" style="z-index: 1190;">
+        <div class="modal-content"
+            style="width: 960px; max-width: 96%; display: flex; flex-direction: column; max-height: 90vh; background: #f8fafc; padding: 25px; border-radius: 12px;">
+            <div
+                style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 16px; border-bottom: 1px solid var(--border-color); padding-bottom: 14px; gap: 12px; flex-wrap: wrap;">
+                <div>
+                    <h3 style="color: var(--primary-color); margin: 0; display: inline-flex; align-items: center; gap: 8px;">
+                        <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none"
+                            stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
+                            <polyline points="1 4 1 10 7 10" />
+                            <path d="M3.51 15a9 9 0 1 0 2.13-9.36L1 10" />
+                            <path d="M12 7v5l3 3" />
+                        </svg>
+                        <span>Lịch Sử Thao Tác</span>
+                    </h3>
+                    <div id="activityHistorySub" style="font-size: 12px; color: var(--text-muted); font-weight: 600; margin-top: 2px;"></div>
+                </div>
+                <span id="btnCloseActivityHistoryModal"
+                    style="cursor: pointer; font-size: 24px; color: var(--text-muted); font-weight: bold; line-height: 1;">&times;</span>
+            </div>
+
+            <div
+                style="display: flex; gap: 8px; flex-wrap: wrap; margin-bottom: 14px; background: #fff; border: 1px solid #e2e8f0; border-radius: 10px; padding: 12px;">
+                <select id="activityPeriodType"
+                    style="padding: 7px 10px; border-radius: 6px; border: 1px solid var(--border-color); font-size: 13px; cursor: pointer; font-weight: 700; color: var(--text-main); background: #fff;">
+                    <option value="day">Theo ngày</option>
+                    <option value="week">Theo tuần</option>
+                    <option value="month" selected>Theo tháng</option>
+                    <option value="year">Theo năm</option>
+                    <option value="all">Tất cả</option>
+                </select>
+                <input type="date" id="activityDaySelect"
+                    style="display: none; padding: 7px 10px; border-radius: 6px; border: 1px solid var(--border-color); font-size: 13px; background: #fff; color: var(--text-main);">
+                <select id="activityWeekSelect"
+                    style="display: none; padding: 7px 10px; border-radius: 6px; border: 1px solid var(--border-color); font-size: 13px; cursor: pointer; background: #fff; color: var(--text-main); max-width: 250px;"></select>
+                <select id="activityMonthSelect"
+                    style="padding: 7px 10px; border-radius: 6px; border: 1px solid var(--border-color); font-size: 13px; cursor: pointer; background: #fff; color: var(--text-main);"></select>
+                <select id="activityYearSelect"
+                    style="display: none; padding: 7px 10px; border-radius: 6px; border: 1px solid var(--border-color); font-size: 13px; cursor: pointer; background: #fff; color: var(--text-main);"></select>
+                <input type="text" id="activitySearchInput" placeholder="Tìm Mã KH / công ty..."
+                    style="flex: 1; min-width: 170px; padding: 7px 12px; border-radius: 6px; border: 1px solid var(--border-color); font-size: 13px; background: #fff;">
+                <select id="activityTypeSelect"
+                    style="padding: 7px 10px; border-radius: 6px; border: 1px solid var(--border-color); font-size: 13px; cursor: pointer; background: #fff; color: var(--text-main);">
+                    <option value="">Tất cả thao tác</option>
+                    <option value="create">Tạo mới KH</option>
+                    <option value="sales">Cập nhật doanh số</option>
+                    <option value="excel">Nhập qua Excel</option>
+                    <option value="adjust">Điều chỉnh / khác</option>
+                </select>
+                <select id="activityUserSelect"
+                    style="padding: 7px 10px; border-radius: 6px; border: 1px solid var(--border-color); font-size: 13px; cursor: pointer; background: #fff; color: var(--text-main); max-width: 170px;">
+                    <option value="">Tất cả người làm</option>
+                </select>
+            </div>
+
+            <div id="activityHistoryList"
+                style="overflow-y: auto; flex: 1; padding-right: 5px; position: relative; min-height: 220px;">
+            </div>
+            <div id="activityHistoryPaging"
+                style="display: flex; justify-content: center; align-items: center; gap: 6px; margin-top: 14px; flex-wrap: wrap;">
+            </div>
+
+            <div class="modal-actions"
+                style="margin-top: 14px; display: flex; justify-content: flex-end; border-top: 1px solid var(--border-color); padding-top: 14px;">
+                <button type="button" id="btnCloseActivityHistoryBtn" class="btn btn-secondary"
+                    style="width: auto; min-width: 100px;">Đóng</button>
+            </div>
+        </div>
+    </div>
+
+    <div id="reportTypeModal" class="modal-overlay" style="z-index: 1220;">
+        <div class="modal-content customer-action-modal">
+            <div class="action-modal-header">
+                <div>
+                    <h3 class="action-modal-title">Chọn Loại Báo Cáo</h3>
+                    <div class="action-modal-subtitle">Vui lòng chọn kỳ báo cáo bạn muốn xem (doanh thu + 2 phân tích KH / sản phẩm)</div>
+                </div>
+                <span id="btnCloseReportTypeModal" class="action-modal-close">&times;</span>
+            </div>
+            <div class="action-modal-body">
+                <div class="action-options-list">
+                    <div class="action-option-card" id="btnReportTypeDay">
+                        <div class="action-option-icon icon-bg-warm">
+                            <span style="font-size: 24px;">📅</span>
+                        </div>
+                        <div class="action-option-content">
+                            <div class="action-option-title text-main">Báo cáo ngày</div>
+                            <div class="action-option-desc">Doanh thu từng ngày + phân tích khách hàng / sản phẩm trong ngày</div>
+                        </div>
+                    </div>
+                    <div class="action-option-card" id="btnReportTypeWeek">
+                        <div class="action-option-icon icon-bg-green">
+                            <span style="font-size: 24px;">📊</span>
+                        </div>
+                        <div class="action-option-content">
+                            <div class="action-option-title text-green">Báo cáo tuần</div>
+                            <div class="action-option-desc">Doanh thu từng tuần (Thứ 2 - Chủ nhật) + phân tích khách hàng / sản phẩm</div>
+                        </div>
+                    </div>
+                    <div class="action-option-card" id="btnReportTypeMonth">
+                        <div class="action-option-icon icon-bg-blue">
+                            <span style="font-size: 24px;">🗓️</span>
+                        </div>
+                        <div class="action-option-content">
+                            <div class="action-option-title text-blue">Báo cáo tháng</div>
+                            <div class="action-option-desc">Doanh thu từng tháng + phân tích khách hàng / sản phẩm trong tháng</div>
+                        </div>
+                    </div>
+                    <div class="action-option-card" id="btnReportTypeYear">
+                        <div class="action-option-icon icon-bg-red">
+                            <span style="font-size: 24px;">🎯</span>
+                        </div>
+                        <div class="action-option-content">
+                            <div class="action-option-title text-red">Báo cáo năm</div>
+                            <div class="action-option-desc">Doanh thu từng năm + phân tích khách hàng / sản phẩm trong năm</div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            <div class="action-modal-footer">
+                <button type="button" id="btnCloseReportTypeBtn" class="btn-close-custom">Đóng</button>
+            </div>
+        </div>
+    </div>
+
     <div id="reportModal" class="modal-overlay">
         <div class="modal-content" style="width: 800px; max-width: 95%;">
-            <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 15px;">
-                <h3 style="color: var(--primary-color); margin: 0;">Báo Cáo Doanh Thu</h3>
-                <select id="reportMonthSelect"
-                    style="padding: 6px 12px; border-radius: 4px; border: 1px solid var(--border-color); font-size: 14px; cursor: pointer; font-weight: bold; color: var(--text-main);"></select>
+            <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 15px; gap: 12px; flex-wrap: wrap;">
+                <div>
+                    <h3 id="reportTitle" style="color: var(--primary-color); margin: 0;">Báo Cáo Doanh Thu</h3>
+                    <div id="reportPeriodSub" style="font-size: 12px; color: var(--text-muted); font-weight: 600; margin-top: 2px;"></div>
+                </div>
+                <div style="display: flex; gap: 8px; align-items: center; flex-wrap: wrap;">
+                    <button type="button" id="btnSwitchReportType" class="btn btn-secondary btn-sm" style="width: auto;" title="Đổi loại báo cáo (Ngày / Tuần / Tháng / Năm)">Đổi loại</button>
+                    <input type="date" id="reportDaySelect"
+                        style="display: none; padding: 6px 12px; border-radius: 4px; border: 1px solid var(--border-color); font-size: 14px; cursor: pointer; font-weight: bold; color: var(--text-main); background: #fff;">
+                    <select id="reportWeekSelect"
+                        style="display: none; padding: 6px 12px; border-radius: 4px; border: 1px solid var(--border-color); font-size: 14px; cursor: pointer; font-weight: bold; color: var(--text-main); max-width: 260px;"></select>
+                    <select id="reportMonthSelect"
+                        style="padding: 6px 12px; border-radius: 4px; border: 1px solid var(--border-color); font-size: 14px; cursor: pointer; font-weight: bold; color: var(--text-main);"></select>
+                    <select id="reportYearSelect"
+                        style="display: none; padding: 6px 12px; border-radius: 4px; border: 1px solid var(--border-color); font-size: 14px; cursor: pointer; font-weight: bold; color: var(--text-main);"></select>
+                </div>
             </div>
             <div
                 style="max-height: 400px; overflow-y: auto; margin-bottom: 15px; border: 1px solid var(--border-color); border-radius: 4px;">
@@ -683,14 +914,14 @@
                     <div
                         style="background: white; padding: 10px; border-radius: 8px; border: 1px solid #e2e8f0; box-shadow: 0 1px 3px rgba(0,0,0,0.02); display: flex; flex-direction: column; justify-content: space-between;">
                         <div>
-                            <div
+                            <div id="kpiRevenuePeriodLabel"
                                 style="font-size: 10px; color: var(--text-muted); font-weight: bold; margin-bottom: 3px;">
-                                TỔNG DOANH THU THÁNG</div>
+                                TỔNG DOANH THU KỲ</div>
                             <div id="kpiRevenue" style="font-size: 15px; font-weight: bold; color: #10b981;">0 đ</div>
                         </div>
                         <div id="kpiRevenueCompare"
                             style="font-size: 11px; color: var(--text-muted); margin-top: 3px; border-top: 1px solid #f1f5f9; padding-top: 3px;">
-                            0% so với tháng trước</div>
+                            0% so với kỳ trước</div>
                     </div>
                     <!-- 3. Số giao dịch -->
                     <div
@@ -766,7 +997,7 @@
                 <!-- Chart 3: Xu hướng tăng giảm doanh thu theo từng tháng (Line Chart) -->
                 <div
                     style="background: white; padding: 20px; border-radius: 8px; border: 1px solid #e2e8f0; display: flex; flex-direction: column; margin-bottom: 25px;">
-                    <h4
+                    <h4 id="analysisTrendTitle"
                         style="color: var(--text-main); margin-top: 0; margin-bottom: 15px; font-size: 14px; font-weight: bold;">
                         Xu Hướng Tăng Trưởng Doanh Thu Theo Từng Tháng (%)</h4>
                     <div style="position: relative; width: 100%; height: 260px;">
@@ -776,9 +1007,9 @@
 
                 <!-- Table: Danh sách khách hàng phát sinh doanh thu lớn nhất -->
                 <div style="background: white; padding: 20px; border-radius: 8px; border: 1px solid #e2e8f0;">
-                    <h4
+                    <h4 id="analysisDetailTitle"
                         style="color: var(--text-main); margin-top: 0; margin-bottom: 15px; font-size: 14px; font-weight: bold; text-align: center;">
-                        Chi Tiết Khách Hàng Phát Sinh Doanh Số Trong Tháng</h4>
+                        Chi Tiết Khách Hàng Phát Sinh Doanh Số Trong Kỳ</h4>
                     <div style="width: 100%;">
                         <table
                             style="width: 100% !important; max-width: 100% !important; min-width: 100% !important; border-collapse: collapse; font-size: 13px; margin: 0 auto; table-layout: fixed;">
@@ -855,8 +1086,8 @@
                         <div id="kpiTotalPurchases" style="font-size: 18px; font-weight: bold; color: #3b82f6;">0</div>
                     </div>
                     <div style="background: white; padding: 12px; border-radius: 8px; border: 1px solid #e2e8f0;">
-                        <div style="font-size: 11px; color: var(--text-muted); font-weight: bold; margin-bottom: 4px;">
-                            DOANH THU THÁNG</div>
+                        <div id="kpiProductRevenueLabel" style="font-size: 11px; color: var(--text-muted); font-weight: bold; margin-bottom: 4px;">
+                            DOANH THU KỲ</div>
                         <div id="kpiProductRevenue" style="font-size: 18px; font-weight: bold; color: #f59e0b;">0 đ
                         </div>
                     </div>
@@ -891,14 +1122,14 @@
 
                 <!-- Table: Phân Tích Sản Phẩm So Với Tháng Trước -->
                 <div style="background: white; padding: 20px; border-radius: 8px; border: 1px solid #e2e8f0; margin-bottom: 25px;">
-                    <h4 style="margin-top: 0; margin-bottom: 15px; font-size: 14px; font-weight: bold; color: var(--text-main, #1e293b);">Phân Tích Sản Phẩm So Với Tháng Trước</h4>
+                    <h4 id="productComparisonTitle" style="margin-top: 0; margin-bottom: 15px; font-size: 14px; font-weight: bold; color: var(--text-main, #1e293b);">Phân Tích Sản Phẩm So Với Kỳ Trước</h4>
                     <div style="max-height: 320px; overflow-y: auto; overflow-x: hidden; width: 100%;">
                         <table style="width: 100% !important; min-width: 0 !important; border-collapse: collapse; font-size: 13px; table-layout: fixed;">
                             <thead style="position: sticky; top: 0; background: #f8fafc; z-index: 1;">
                                 <tr style="border-bottom: 2px solid #e2e8f0;">
                                     <th style="width: 30%; padding: 8px 4px; font-size: 12px; text-align: left; font-weight: bold; text-transform: none; white-space: nowrap;">Tên sản phẩm</th>
-                                    <th style="width: 14%; padding: 8px 4px; font-size: 12px; text-align: center; font-weight: bold; text-transform: none; white-space: nowrap;">SL (Tháng trước)</th>
-                                    <th style="width: 14%; padding: 8px 4px; font-size: 12px; text-align: center; font-weight: bold; text-transform: none; white-space: nowrap;">SL (Tháng này)</th>
+                                    <th id="productCompPrevTh" style="width: 14%; padding: 8px 4px; font-size: 12px; text-align: center; font-weight: bold; text-transform: none; white-space: nowrap;">SL (Kỳ trước)</th>
+                                    <th id="productCompCurrTh" style="width: 14%; padding: 8px 4px; font-size: 12px; text-align: center; font-weight: bold; text-transform: none; white-space: nowrap;">SL (Kỳ này)</th>
                                     <th style="width: 14%; padding: 8px 4px; font-size: 12px; text-align: center; font-weight: bold; text-transform: none; white-space: nowrap;">Chênh lệch (SL)</th>
                                     <th style="width: 14%; padding: 8px 4px; font-size: 12px; text-align: center; font-weight: bold; text-transform: none; white-space: nowrap;">Tỷ lệ (%)</th>
                                     <th style="width: 14%; padding: 8px 4px; font-size: 12px; text-align: center; font-weight: bold; text-transform: none; white-space: nowrap;">Trạng thái</th>
