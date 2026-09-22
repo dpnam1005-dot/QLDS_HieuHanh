@@ -2894,18 +2894,46 @@ function sumHistoryInRange(rStart, rEnd) {
     return { rev, count };
 }
 
-function switchAppPage(page) {
+function getPageFromHash() {
+    try {
+        const h = String(window.location.hash || '').toLowerCase();
+        if (h.indexOf('dashboard') !== -1) return 'dashboard';
+        if (h.indexOf('ranking') !== -1) return 'ranking';
+        const saved = localStorage.getItem('qlds_current_page');
+        if (saved === 'dashboard') return 'dashboard';
+        return 'ranking';
+    } catch (e) { return 'ranking'; }
+}
+
+function switchAppPage(page, push = true) {
+    const normalized = page === 'dashboard' ? 'dashboard' : 'ranking';
     const dashboardPage = document.getElementById('pageDashboard');
     const rankingPage = document.getElementById('pageRanking');
     const tabDashboard = document.getElementById('tabDashboard');
     const tabRanking = document.getElementById('tabRanking');
-    const showDashboard = page === 'dashboard';
+    const showDashboard = normalized === 'dashboard';
     if (dashboardPage) dashboardPage.style.display = showDashboard ? 'block' : 'none';
     if (rankingPage) rankingPage.style.display = showDashboard ? 'none' : 'block';
     if (tabDashboard) tabDashboard.classList.toggle('active', showDashboard);
     if (tabRanking) tabRanking.classList.toggle('active', !showDashboard);
     if (showDashboard) renderDashboard();
+    try { localStorage.setItem('qlds_current_page', normalized); } catch (e) {}
+    if (push) {
+        const targetHash = showDashboard ? '#/dashboard' : '#/ranking';
+        if (window.location.hash !== targetHash) window.location.hash = targetHash;
+    }
 }
+
+// F5 giữ đúng trang + nút Back chuyển trang nội bộ thay vì thoát (hash routing)
+window.addEventListener('hashchange', () => {
+    switchAppPage(getPageFromHash(), false);
+});
+try {
+    switchAppPage(getPageFromHash(), false);
+    if (!window.location.hash) {
+        history.replaceState(null, '', getPageFromHash() === 'dashboard' ? '#/dashboard' : '#/ranking');
+    }
+} catch (e) {}
 
 function refreshDashboardIfVisible() {
     const dashboardPage = document.getElementById('pageDashboard');
