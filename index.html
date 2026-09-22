@@ -122,16 +122,7 @@
                         <div id="dashboardSub" style="font-size: 12px; color: var(--text-muted); font-weight: 600; margin-top: 2px;"></div>
                     </div>
                     <div class="header-actions">
-                        <select id="dashboardPeriodType"
-                            style="padding: 8px 12px; border-radius: 6px; border: 1px solid var(--border-color); font-size: 13px; cursor: pointer; font-weight: 700; color: var(--text-main); background: #fff;">
-                            <option value="month" selected>Tháng này</option>
-                            <option value="day">Hôm nay</option>
-                            <option value="week">Tuần này</option>
-                            <option value="year">Năm nay</option>
-                        </select>
                         <button type="button" id="btnDashboardReport" class="btn btn-report-month btn-sm">Mở báo cáo</button>
-                        <button type="button" id="btnDashboardAnalysis" class="btn btn-primary btn-sm">Phân tích KH</button>
-                        <button type="button" id="btnDashboardProducts" class="btn btn-import-excel btn-sm">Phân tích SP</button>
                     </div>
                 </div>
                 <div id="dashboardKpiGrid" style="display: grid; grid-template-columns: repeat(4, 1fr); gap: 12px; margin-bottom: 16px;"></div>
@@ -192,9 +183,6 @@
                             Excel</button>
                         <button type="button" id="btnExportPDF" class="btn btn-export-pdf btn-sm">Xuất PDF</button>
 
-                        <span style="border-left: 1px solid #cbd5e1; height: 24px; margin: 0 4px;"></span>
-                        <button type="button" id="btnReportMonth" class="btn btn-report-month btn-sm">Báo
-                            cáo</button>
                         <button type="button" id="btnActivityHistory" class="btn btn-history btn-sm"
                             style="display: inline-flex; align-items: center; gap: 6px;" title="Xem lịch sử thao tác toàn hệ thống">
                             <svg xmlns="http://www.w3.org/2000/svg" width="15" height="15" viewBox="0 0 24 24"
@@ -406,91 +394,103 @@
 
     <!-- Modal Form Thêm Khách Hàng Mới -->
     <div id="customerFormModal" class="modal-overlay">
-        <div class="modal-content customer-form-modal">
-            <div class="modal-header-custom">
-                <h3 id="formModalTitle" class="modal-title-custom">
-                    <span id="formModalIcon">➕</span> <span id="formModalTitleText">Thêm Khách Hàng Mới</span>
-                </h3>
+        <div class="modal-content customer-form-modal customer-add-modal">
+            <div class="modal-header-custom customer-add-header">
+                <div style="display: flex; align-items: center; gap: 12px;">
+                    <span class="customer-add-avatar">➕</span>
+                    <div>
+                        <h3 id="formModalTitle" class="modal-title-custom" style="border: none; padding: 0; margin: 0;">
+                            <span id="formModalIcon" style="display: none;">➕</span> <span id="formModalTitleText">Thêm Khách Hàng Mới</span>
+                        </h3>
+                        <div class="customer-add-sub">Nhập hồ sơ và đơn hàng đầu tiên trong một lần</div>
+                    </div>
+                </div>
                 <span id="btnCloseCustomerFormModal" class="modal-close-custom">&times;</span>
             </div>
 
             <form id="customerForm">
-                <!-- Row 1: Mã KH & MST -->
-                <div class="form-row">
-                    <div class="form-group-custom form-group" style="flex: 1;">
-                        <label for="customerId">Mã KH *</label>
-                        <input type="text" id="customerId" class="form-control-custom" required
-                            placeholder="Ví dụ: KH001">
-                        <div id="customerIdError"
-                            style="color: #ef4444; font-size: 12px; margin-top: 4px; display: none; font-weight: 600;">
-                            ⚠️ Mã khách hàng này đã tồn tại!</div>
+                <!-- Khối 1: Thông tin khách hàng -->
+                <div class="customer-add-section">
+                    <div class="customer-add-section-title"><span>👤</span> Thông tin khách hàng</div>
+                    <!-- Row 1: Mã KH & MST -->
+                    <div class="form-row">
+                        <div class="form-group-custom form-group" style="flex: 1;">
+                            <label for="customerId">Mã KH *</label>
+                            <input type="text" id="customerId" class="form-control-custom" required
+                                placeholder="Ví dụ: KH001">
+                            <div id="customerIdError"
+                                style="color: #ef4444; font-size: 12px; margin-top: 4px; display: none; font-weight: 600;">
+                                ⚠️ Mã khách hàng này đã tồn tại!</div>
+                        </div>
+                        <div class="form-group-custom form-group" style="flex: 1;">
+                            <label for="taxId">Mã số thuế (MST)</label>
+                            <input type="text" id="taxId" class="form-control-custom" placeholder="Nhập MST...">
+                        </div>
                     </div>
-                    <div class="form-group-custom form-group" style="flex: 1;">
-                        <label for="taxId">Mã số thuế (MST)</label>
-                        <input type="text" id="taxId" class="form-control-custom" placeholder="Nhập MST...">
+
+                    <!-- Row 2: Tên Công ty & Phân loại -->
+                    <div class="form-row">
+                        <div class="form-group-custom form-group" style="flex: 1;">
+                            <label for="companyName">Tên Công ty</label>
+                            <input type="text" id="companyName" class="form-control-custom" placeholder="Tên công ty...">
+                        </div>
+                        <div class="form-group-custom form-group" style="flex: 1;">
+                            <label for="classification">Phân loại khách hàng</label>
+                            <select id="classification" class="form-control-custom">
+                                <option value="">-- Chưa phân loại --</option>
+                                <option value="Khách mới">Khách mới</option>
+                                <option value="Thường xuyên">Thường xuyên</option>
+                                <option value="Không thường xuyên">Không thường xuyên</option>
+                                <option value="Chưa liên hệ được">Chưa liên hệ được</option>
+                                <option value="Không nhu cầu">Không nhu cầu</option>
+                            </select>
+                        </div>
+                    </div>
+
+                    <!-- Row 4: Người liên hệ & SĐT -->
+                    <div class="form-row" style="margin-bottom: 0;">
+                        <div class="form-group-custom form-group" style="flex: 1; margin-bottom: 0;">
+                            <label for="contactName">Người liên hệ</label>
+                            <input type="text" id="contactName" class="form-control-custom" placeholder="Tên người LH...">
+                        </div>
+                        <div class="form-group-custom form-group" style="flex: 1; margin-bottom: 0;">
+                            <label for="phone">Số điện thoại</label>
+                            <input type="tel" id="phone" class="form-control-custom" placeholder="SĐT...">
+                        </div>
                     </div>
                 </div>
 
-                <!-- Row 2: Tên Công ty & Phân loại -->
-                <div class="form-row">
-                    <div class="form-group-custom form-group" style="flex: 1;">
-                        <label for="companyName">Tên Công ty</label>
-                        <input type="text" id="companyName" class="form-control-custom" placeholder="Tên công ty...">
-                    </div>
-                    <div class="form-group-custom form-group" style="flex: 1;">
-                        <label for="classification">Phân loại khách hàng</label>
-                        <select id="classification" class="form-control-custom">
-                            <option value="">-- Chưa phân loại --</option>
-                            <option value="Khách mới">Khách mới</option>
-                            <option value="Thường xuyên">Thường xuyên</option>
-                            <option value="Không thường xuyên">Không thường xuyên</option>
-                            <option value="Chưa liên hệ được">Chưa liên hệ được</option>
-                            <option value="Không nhu cầu">Không nhu cầu</option>
-                        </select>
-                    </div>
-                </div>
-
-                <!-- Row 3: Danh sách sản phẩm ban đầu (khách mới có thể mua nhiều loại cùng lúc) -->
-                <div class="form-group-custom form-group">
-                    <label>Danh sách sản phẩm ban đầu</label>
-                    <div id="newCustomerItemsList" style="display: flex; flex-direction: column; gap: 10px;"></div>
-                    <button type="button" id="btnAddNewCustomerItem" class="btn-cancel-sales"
-                        style="margin-top: 10px; width: auto; padding: 8px 16px; font-size: 13px;">+ Thêm sản phẩm
-                        (mua nhiều loại cùng lúc)</button>
-                    <div
-                        style="margin-top: 10px; background: #F8FAFC; border: 1px dashed #CBD5E1; border-radius: 8px; padding: 10px 12px; display: flex; justify-content: space-between; align-items: center;">
-                        <span style="font-size: 13px; font-weight: 700; color: #475569;">Tổng doanh số ban
-                            đầu:</span>
-                        <span id="newCustomerBatchTotal"
-                            style="font-size: 15px; font-weight: 800; color: #059669; font-family: 'Roboto Mono', monospace;">0
-                            ₫</span>
-                    </div>
-                    <!-- Giữ 2 input + datalist cũ ở dạng ẩn để tương thích code cũ/autocomplete -->
-                    <div style="display: none;">
-                        <input type="text" id="category" class="form-control-custom" list="categoryDatalist"
-                            placeholder="Nhập hoặc chọn tên sản phẩm...">
-                        <datalist id="categoryDatalist">
-                            <option value="Máy in">
-                            <option value="Mực in">
-                            <option value="Linh kiện">
-                            <option value="Dịch vụ / Sửa chữa">
-                            <option value="Khác">
-                        </datalist>
-                        <input type="text" id="productDesc" class="form-control-custom" list="productDescDatalist"
-                            placeholder="Nhập hoặc chọn mô tả (ví dụ: HP M404dn)...">
-                        <datalist id="productDescDatalist"></datalist>
-                    </div>
-                </div>
-
-                <!-- Row 4: Người liên hệ & SĐT -->
-                <div class="form-row">
-                    <div class="form-group-custom form-group" style="flex: 1;">
-                        <label for="contactName">Người liên hệ</label>
-                        <input type="text" id="contactName" class="form-control-custom" placeholder="Tên người LH...">
-                    </div>
-                    <div class="form-group-custom form-group" style="flex: 1;">
-                        <label for="phone">Số điện thoại</label>
-                        <input type="tel" id="phone" class="form-control-custom" placeholder="SĐT...">
+                <!-- Khối 2: Đơn hàng đầu tiên -->
+                <div class="customer-add-section customer-add-order">
+                    <div class="customer-add-section-title"><span>🧾</span> Đơn hàng đầu tiên <span class="customer-add-badge">Nhiều sản phẩm</span></div>
+                    <!-- Row 3: Danh sách sản phẩm ban đầu (khách mới có thể mua nhiều loại cùng lúc) -->
+                    <div class="form-group-custom form-group" style="margin-bottom: 0;">
+                        <div id="newCustomerItemsList" style="display: flex; flex-direction: column; gap: 10px;"></div>
+                        <button type="button" id="btnAddNewCustomerItem" class="btn-cancel-sales customer-add-more"
+                            style="margin-top: 10px; width: auto; padding: 8px 16px; font-size: 13px;">+ Thêm sản phẩm
+                            (mua nhiều loại cùng lúc)</button>
+                        <div class="customer-add-total">
+                            <span style="font-size: 13px; font-weight: 700; color: #475569;">Tổng doanh số ban
+                                đầu:</span>
+                            <span id="newCustomerBatchTotal"
+                                style="font-size: 15px; font-weight: 800; color: #059669; font-family: 'Roboto Mono', monospace;">0
+                                ₫</span>
+                        </div>
+                        <!-- Giữ 2 input + datalist cũ ở dạng ẩn để tương thích code cũ/autocomplete -->
+                        <div style="display: none;">
+                            <input type="text" id="category" class="form-control-custom" list="categoryDatalist"
+                                placeholder="Nhập hoặc chọn tên sản phẩm...">
+                            <datalist id="categoryDatalist">
+                                <option value="Máy in">
+                                <option value="Mực in">
+                                <option value="Linh kiện">
+                                <option value="Dịch vụ / Sửa chữa">
+                                <option value="Khác">
+                            </datalist>
+                            <input type="text" id="productDesc" class="form-control-custom" list="productDescDatalist"
+                                placeholder="Nhập hoặc chọn mô tả (ví dụ: HP M404dn)...">
+                            <datalist id="productDescDatalist"></datalist>
+                        </div>
                     </div>
                 </div>
 
@@ -510,8 +510,8 @@
                 </div>
 
                 <!-- Nút bấm submit -->
-                <div style="margin-top: 20px;">
-                    <button type="submit" id="btnSubmit" class="btn-submit-custom">Lưu Khách Hàng</button>
+                <div style="margin-top: 20px; display: flex; gap: 10px;">
+                    <button type="submit" id="btnSubmit" class="btn-submit-custom" style="margin-top: 0;">Lưu Khách Hàng</button>
                 </div>
             </form>
         </div>
@@ -665,18 +665,17 @@
     </div>
 
     <div id="reportModal" class="modal-overlay">
-        <div class="modal-content" style="width: 800px; max-width: 95%;">
+        <div class="modal-content" style="width: 1200px; max-width: 96vw; max-height: 92vh; display: flex; flex-direction: column; overflow: hidden; padding: 28px 30px;">
             <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 15px; gap: 12px; flex-wrap: wrap;">
                 <div>
                     <h3 id="reportTitle" style="color: var(--primary-color); margin: 0;">Báo Cáo Doanh Thu</h3>
                     <div id="reportPeriodSub" style="font-size: 12px; color: var(--text-muted); font-weight: 600; margin-top: 2px;"></div>
                 </div>
                 <div style="display: flex; gap: 8px; align-items: center; flex-wrap: wrap;">
-                    <button type="button" id="btnSwitchReportType" class="btn btn-secondary btn-sm" style="width: auto;" title="Đổi loại báo cáo (Ngày / Tuần / Tháng / Năm)">Đổi loại</button>
                     <input type="date" id="reportDaySelect"
                         style="display: none; padding: 6px 12px; border-radius: 4px; border: 1px solid var(--border-color); font-size: 14px; cursor: pointer; font-weight: bold; color: var(--text-main); background: #fff;">
                     <select id="reportWeekSelect"
-                        style="display: none; padding: 6px 12px; border-radius: 4px; border: 1px solid var(--border-color); font-size: 14px; cursor: pointer; font-weight: bold; color: var(--text-main); max-width: 260px;"></select>
+                        style="display: none; padding: 6px 12px; border-radius: 4px; border: 1px solid var(--border-color); font-size: 14px; cursor: pointer; font-weight: bold; color: var(--text-main); max-width: 380px; width: auto;"></select>
                     <select id="reportMonthSelect"
                         style="padding: 6px 12px; border-radius: 4px; border: 1px solid var(--border-color); font-size: 14px; cursor: pointer; font-weight: bold; color: var(--text-main);"></select>
                     <select id="reportYearSelect"
@@ -684,20 +683,20 @@
                 </div>
             </div>
             <div
-                style="max-height: 400px; overflow-y: auto; margin-bottom: 15px; border: 1px solid var(--border-color); border-radius: 4px;">
-                <table style="width: 100%; border-collapse: collapse; min-width: 600px;">
+                style="max-height: 52vh; min-height: 320px; overflow-y: auto; margin-bottom: 15px; border: 1px solid var(--border-color); border-radius: 8px;">
+                <table style="width: 100%; border-collapse: collapse; min-width: 980px; font-size: 14px; table-layout: fixed;">
                     <thead style="position: sticky; top: 0; z-index: 1;">
                         <tr>
                             <th
-                                style="background: #f8fafc; padding: 10px; border-bottom: 1px solid #e2e8f0; text-align: center;">
+                                style="background: #f8fafc; padding: 12px 8px; border-bottom: 1px solid #e2e8f0; text-align: center; white-space: nowrap; width: 130px;">
                                 Thời gian</th>
-                            <th style="background: #f8fafc; padding: 10px; border-bottom: 1px solid #e2e8f0;">Mã KH</th>
-                            <th style="background: #f8fafc; padding: 10px; border-bottom: 1px solid #e2e8f0;">Tên Công
+                            <th style="background: #f8fafc; padding: 12px 14px; border-bottom: 1px solid #e2e8f0; white-space: nowrap; width: 21%;">Mã KH</th>
+                            <th style="background: #f8fafc; padding: 12px 14px; border-bottom: 1px solid #e2e8f0;">Tên Công
                                 ty</th>
                             <th
-                                style="background: #f8fafc; padding: 10px; border-bottom: 1px solid #e2e8f0; text-align: right;">
+                                style="background: #f8fafc; padding: 12px 14px; border-bottom: 1px solid #e2e8f0; text-align: right; white-space: nowrap;">
                                 Doanh thu tăng</th>
-                            <th style="background: #f8fafc; padding: 10px; border-bottom: 1px solid #e2e8f0;">Ghi chú
+                            <th style="background: #f8fafc; padding: 12px 14px; border-bottom: 1px solid #e2e8f0; min-width: 240px;">Ghi chú
                             </th>
                         </tr>
                     </thead>
@@ -709,9 +708,9 @@
                 <strong>Tổng Doanh Thu:</strong>
                 <strong id="reportTotalRevenue" style="color: #10b981; font-size: 18px;">0 VNĐ</strong>
             </div>
-            <div class="modal-actions" style="justify-content: space-between; display: flex; width: 100%;">
+            <div class="modal-actions" style="justify-content: flex-start; display: flex; width: 100%; gap: 10px;">
                 <button type="button" id="btnAnalyzeCustomers" class="btn btn-primary"
-                    style="flex: 1; max-width: 280px; background-color: var(--primary-color); display: inline-flex; align-items: center; justify-content: center; gap: 8px;">
+                    style="flex: none; width: auto; min-width: 220px; background-color: var(--primary-color); display: inline-flex; align-items: center; justify-content: center; gap: 8px;">
                     <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" fill="currentColor"
                         class="bi bi-bar-chart-line" viewBox="0 0 16 16">
                         <path
@@ -720,7 +719,7 @@
                     <span>Phân tích Khách hàng</span>
                 </button>
                 <button type="button" id="btnAnalyzeProducts" class="btn btn-primary"
-                    style="flex: 1; max-width: 280px; background-color: var(--accent-terracotta); display: inline-flex; align-items: center; justify-content: center; gap: 8px;">
+                    style="flex: none; width: auto; min-width: 220px; background-color: var(--accent-terracotta); display: inline-flex; align-items: center; justify-content: center; gap: 8px;">
                     <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" fill="currentColor"
                         viewBox="0 0 16 16">
                         <path
@@ -730,8 +729,8 @@
                     </svg>
                     <span>Phân tích Sản phẩm</span>
                 </button>
-                <button type="button" id="btnCloseReport" class="btn btn-secondary"
-                    style="width: auto; min-width: 100px;">Đóng</button>
+                <button type="button" id="btnBackFromReport" class="btn btn-secondary report-back-button"
+                    style="width: auto; min-width: 100px; margin-left: auto;">← Trở lại</button>
             </div>
         </div>
     </div>
@@ -821,6 +820,34 @@
                     style="width: auto;">Hủy</button>
                 <button type="button" id="btnConfirmExcelImport" class="btn btn-primary" style="width: auto;">Xác nhận &
                     Nhập</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Modal sửa giao dịch cũ: tách / chia lại tiền theo SP, giữ nguyên ngày gốc -->
+    <div id="editHistoryTxModal" class="modal-overlay" style="z-index: 1190;">
+        <div class="modal-content customer-form-modal" style="width: 620px;">
+            <div class="modal-header-custom">
+                <h3 class="modal-title-custom">
+                    <span>🧾</span> <span>Sửa Chia Tiền Theo Sản Phẩm</span>
+                </h3>
+                <span id="btnCloseEditHistoryTxModal" class="modal-close-custom">&times;</span>
+            </div>
+            <div id="editHistoryTxMeta"
+                style="background: #f8fafc; border-left: 4px solid var(--primary-color); padding: 10px 14px; border-radius: 6px; margin-bottom: 14px; font-size: 13px; color: var(--text-main); line-height: 1.6;"></div>
+            <div id="editHistoryTxItems" style="display: flex; flex-direction: column; gap: 10px;"></div>
+            <button type="button" id="btnAddEditHistoryTxItem" class="btn-cancel-sales"
+                style="margin-top: 10px; width: auto; padding: 8px 16px; font-size: 13px;">+ Tách thêm sản phẩm</button>
+            <div
+                style="margin-top: 10px; background: #F8FAFC; border: 1px dashed #CBD5E1; border-radius: 8px; padding: 10px 12px; display: flex; justify-content: space-between; align-items: center; gap: 10px; flex-wrap: wrap;">
+                <span style="font-size: 13px; font-weight: 700; color: #475569;">Tổng sau sửa: <span id="editHistoryTxTotal" style="font-family: 'Roboto Mono', monospace; font-weight: 800;">0 ₫</span></span>
+                <span style="font-size: 12px; color: var(--text-muted);">Tổng gốc phải giữ: <strong id="editHistoryTxOriginal" style="font-family: 'Roboto Mono', monospace;">0 ₫</strong></span>
+            </div>
+            <div id="editHistoryTxWarn" style="display: none; margin-top: 8px; font-size: 12.5px; font-weight: 700; color: #DC2626;"></div>
+            <div style="font-size: 12px; color: var(--text-muted); margin-top: 8px; line-height: 1.5;">Ngày giao dịch gốc được giữ nguyên để không dời kỳ báo cáo. Tổng sau sửa phải bằng tổng gốc.</div>
+            <div style="margin-top: 16px; display: flex; justify-content: flex-end; gap: 10px;">
+                <button type="button" id="btnSaveEditHistoryTx" class="btn-submit-custom" style="width: auto; padding: 10px 20px;">Lưu chia lại</button>
+                <button type="button" id="btnCancelEditHistoryTx" class="btn-cancel-sales" style="padding: 10px 20px;">Hủy</button>
             </div>
         </div>
     </div>
@@ -1033,8 +1060,8 @@
 
             <div class="modal-actions"
                 style="margin-top: 20px; display: flex; justify-content: flex-end; border-top: 1px solid var(--border-color); padding-top: 15px;">
-                <button type="button" id="btnCloseAnalysisBtn" class="btn btn-secondary"
-                    style="width: auto; min-width: 100px;">Đóng</button>
+                <button type="button" id="btnBackFromAnalysis" class="btn btn-secondary report-back-button"
+                    style="width: auto; min-width: 100px;">← Trở lại</button>
             </div>
         </div>
     </div>
@@ -1170,8 +1197,8 @@
 
             <div class="modal-actions"
                 style="margin-top: 20px; display: flex; justify-content: flex-end; border-top: 1px solid var(--border-color); padding-top: 15px;">
-                <button type="button" id="btnCloseProductAnalysisBtn" class="btn btn-secondary"
-                    style="width: auto; min-width: 100px;">Đóng</button>
+                <button type="button" id="btnBackFromProductAnalysis" class="btn btn-secondary report-back-button"
+                    style="width: auto; min-width: 100px;">← Trở lại</button>
             </div>
         </div>
     </div>

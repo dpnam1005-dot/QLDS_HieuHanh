@@ -1063,6 +1063,7 @@ function buildSalesItemRow(listType, item) {
     nameInput.setAttribute('list', listType === 'new' ? 'categoryDatalist' : 'salesCategoryDatalist');
     nameWrap.appendChild(nameLabel);
     nameWrap.appendChild(nameInput);
+    bindAutocompleteElement(nameInput, listType === 'new' ? 'categoryDatalist' : 'salesCategoryDatalist');
 
     const descWrap = document.createElement('div');
     descWrap.style.flex = '1';
@@ -1077,6 +1078,7 @@ function buildSalesItemRow(listType, item) {
     descInput.setAttribute('list', listType === 'new' ? 'productDescDatalist' : 'salesProductDescDatalist');
     descWrap.appendChild(descLabel);
     descWrap.appendChild(descInput);
+    bindAutocompleteElement(descInput, listType === 'new' ? 'productDescDatalist' : 'salesProductDescDatalist');
 
     midRow.appendChild(nameWrap);
     midRow.appendChild(descWrap);
@@ -1210,6 +1212,189 @@ function summarizeBatchForTopLevel(items) {
         biggest
     };
 }
+
+// ========== SỬA GIAO DỊCH CŨ: CHIA LẠI TIỀN THEO SP, GIỮ NGUYÊN NGÀY + TỔNG ==========
+// Trường hợp của bạn: tổng sales đúng, chỉ chia sai theo từng SP.
+// Nguyên tắc: giữ nguyên date gốc (không dời kỳ báo cáo), tổng sau sửa phải bằng tổng gốc,
+// sales mới = sales cũ - tổng gốc + tổng mới (luôn bằng sales cũ nếu tổng sau sửa đúng).
+let editHistoryTxState = null;
+
+function getEditHistoryTxItems() {
+    const list = document.getElementById('editHistoryTxItems');
+    if (!list) return [];
+    return Array.from(list.querySelectorAll('.sales-item-row')).map(row => {
+        const amountInput = row.querySelector('.sales-item-amount');
+        const nameInput = row.querySelector('.sales-item-name');
+        const descInput = row.querySelector('.sales-item-desc');
+        return {
+            row,
+            amountInput,
+            amount: parseMoneyInputValue(amountInput ? amountInput.value : ''),
+            category: nameInput ? nameInput.value.trim() : '',
+            productDesc: descInput ? descInput.value.trim() : ''
+        };
+    });
+}
+
+function updateEditHistoryTxTotal() {
+    const items = getEditHistoryTxItems();
+    const total = items.reduce((sum, it) => sum + (it.amount || 0), 0);
+    const totalEl = document.getElementById('editHistoryTxTotal');
+    const origEl = document.getElementById('editHistoryTxOriginal');
+    const warnEl = document.getElementById('editHistoryTxWarn');
+    const saveBtn = document.getElementById('btnSaveEditHistoryTx');
+    const original = editHistoryTxState ? editHistoryTxState.originalTotal : 0;
+    if (totalEl) {
+        totalEl.textContent = formatCurrency(total);
+        totalEl.style.color = total === original ? '#059669' : '#DC2626';
+    }
+    if (origEl) origEl.textContent = formatCurrency(original);
+    const mismatch = total !== original;
+    if (warnEl) {
+        warnEl.style.display = mismatch ? 'block' : 'none';
+        if (mismatch) warnEl.textContent = `Tổng sau sửa (${formatCurrency(total)}) đang lệch ${formatCurrency(total - original)} so với tổng gốc. Hãy chia lại cho khớp thì mới lưu được.`;
+    }
+    if (saveBtn) saveBtn.disabled = mismatch;
+}
+
+function openEditHistoryTx(customerId, batchId, singleIndex) {
+    const customer = customers.find(c => String(c.customerId).toLowerCase() === String(customerId).toLowerCase());
+    if (!customer || !Array.isArray(customer.history)) return;
+    let entries = [];
+    let indices = [];
+    if (batchId) {
+        customer.history.forEach((tx, idx) => {
+            if (tx && tx.batchId === batchId) { entries.push(tx); indices.push(idx); }
+        });
+    } else if (singleIndex !== null && singleIndex !== undefined && singleIndex >= 0) {
+        const tx = customer.history[singleIndex];
+        if (tx) { entries = [tx]; indices = [singleIndex]; }
+    }
+    if (entries.length === 0) return;
+    const originalTotal = entries.reduce((sum, tx) => sum + (Number(tx.amount) || 0), 0);
+    const keepDate = entries[0].date;
+    const keepNote = entries[0].batchNote || '';
+    editHistoryTxState = { customerId: customer.customerId, batchId: batchId || null, indices, originalTotal, keepDate, keepNote };
+
+    const metaEl = document.getElementById('editHistoryTxMeta');
+    if (metaEl) {
+        const d = new Date(keepDate);
+        const when = isNaN(d.getTime()) ? keepDate : d.toLocaleString('vi-VN', { day: '2-digit', month: '2-digit', year: 'numeric', hour: '2-digit', minute: '2-digit' });
+        metaEl.innerHTML = `<strong>${customer.customerId}</strong>${customer.companyName ? ` - ${customer.companyName}` : ''}<br><span style="color: var(--text-muted);">Ngày gốc (giữ nguyên): <strong>${when}</strong> • Số dòng hiện tại: <strong>${entries.length}</strong></span>`;
+    }
+    const list = document.getElementById('editHistoryTxItems');
+    if (list) {
+        list.innerHTML = '';
+        entries.forEach(tx => {
+            const row = buildSalesItemRow('edithistory', { amount: tx.amount, category: tx.category || '', productDesc: tx.productDesc || '' });
+            const amt = row.querySelector('.sales-item-amount');
+            if (amt) amt.addEventListener('input', updateEditHistoryTxTotal);
+            list.appendChild(row);
+        });
+    }
+    updateEditHistoryTxTotal();
+    const modal = document.getElementById('editHistoryTxModal');
+    if (modal) modal.style.display = 'flex';
+}
+
+function closeEditHistoryTxModal() {
+    const modal = document.getElementById('editHistoryTxModal');
+    if (modal) modal.style.display = 'none';
+    editHistoryTxState = null;
+}
+
+async function saveEditHistoryTx() {
+    if (!editHistoryTxState) return;
+    const customer = customers.find(c => String(c.customerId).toLowerCase() === String(editHistoryTxState.customerId).toLowerCase());
+    if (!customer || !Array.isArray(customer.history)) return;
+    const items = getEditHistoryTxItems();
+    const filled = items.filter(it => it.amount !== null && it.amount !== 0);
+    if (filled.length === 0) {
+        alert('Vui lòng nhập số tiền khác 0 cho ít nhất 1 sản phẩm!');
+        return;
+    }
+    if (items.some(it => {
+        const raw = it.amountInput ? it.amountInput.value.trim() : '';
+        return raw !== '' && (it.amount === null || it.amount === 0);
+    })) {
+        alert('Có dòng số tiền chưa hợp lệ. Vui lòng kiểm tra lại!');
+        return;
+    }
+    if (items.some(it => (it.category || it.productDesc) && (it.amount === null || it.amount === 0))) {
+        alert('Có sản phẩm đã nhập tên/mô tả nhưng chưa nhập số tiền. Vui lòng nhập số tiền hoặc xóa dòng đó!');
+        return;
+    }
+    const newTotal = filled.reduce((sum, it) => sum + (it.amount || 0), 0);
+    if (newTotal !== editHistoryTxState.originalTotal) {
+        alert(`Tổng sau sửa phải bằng tổng gốc ${formatCurrency(editHistoryTxState.originalTotal)}. Hiện đang ${formatCurrency(newTotal)}.`);
+        return;
+    }
+    const actionBy = currentUserEmail ? currentUserEmail.split('@')[0] : 'hệ thống';
+    const batchId = editHistoryTxState.batchId || createBatchId();
+    const baseNote = editHistoryTxState.keepNote;
+    const newEntries = filled.map(it => {
+        const itemParts = [];
+        if (it.category) itemParts.push(`[${it.category}]`);
+        if (it.productDesc) itemParts.push(it.productDesc);
+        const itemLabel = itemParts.length > 0 ? itemParts.join(' ') : 'Sản phẩm';
+        const prevNote = `${itemLabel}${baseNote ? ` - ${baseNote}` : ''}`;
+        const note = /chỉnh sửa chia tiền/i.test(prevNote) ? prevNote : `${prevNote} (chỉnh sửa chia tiền)`;
+        return {
+            date: editHistoryTxState.keepDate,
+            amount: it.amount,
+            note,
+            batchNote: baseNote || '',
+            category: it.category || '',
+            productDesc: it.productDesc || '',
+            batchId,
+            updated_by: actionBy
+        };
+    });
+
+    const keepIdx = new Set(editHistoryTxState.indices);
+    const keptHistory = customer.history.filter((tx, idx) => !keepIdx.has(idx));
+    newEntries.forEach(entry => keptHistory.push(entry));
+    customer.history = keptHistory;
+    const historySum = customer.history.reduce((sum, tx) => sum + (Number(tx.amount) || 0), 0);
+    customer.sales = historySum;
+    customer.lastUpdated = new Date().toISOString();
+    const summary = summarizeBatchForTopLevel(filled);
+    if (summary.category) customer.category = summary.category;
+    if (summary.productDesc) customer.productDesc = summary.productDesc;
+
+    const saveBtn = document.getElementById('btnSaveEditHistoryTx');
+    if (saveBtn) { saveBtn.innerText = 'Đang lưu...'; saveBtn.disabled = true; }
+    const payload = mapToSupabase(customer);
+    const { error } = await supabaseClient.from('Quan ly ban hang').update(payload).eq('customer_id', customer.customerId);
+    if (saveBtn) { saveBtn.innerText = 'Lưu chia lại'; saveBtn.disabled = false; }
+    if (error) {
+        alert('Lỗi khi lưu chia lại: ' + error.message);
+        return;
+    }
+    await fetchCustomers();
+    updateCategoryDatalist();
+    closeEditHistoryTxModal();
+    showHistoryModal(customer.customerId);
+    if (notificationTitle && notificationMessage && notificationModal) {
+        notificationTitle.innerText = 'Đã chia lại thành công!';
+        notificationTitle.style.color = '#10b981';
+        notificationMessage.innerHTML = `Đã chia <strong>${formatCurrency(editHistoryTxState ? editHistoryTxState.originalTotal : newTotal)}</strong> thành <strong>${filled.length} sản phẩm</strong>, giữ nguyên ngày và tổng.<br><span style="color: #64748b; font-size: 13px;">Bạn có thể kiểm tra lại ở Lịch sử và Phân tích Sản phẩm.</span>`;
+        notificationModal.style.display = 'flex';
+    }
+}
+
+document.getElementById('btnAddEditHistoryTxItem')?.addEventListener('click', function () {
+    const list = document.getElementById('editHistoryTxItems');
+    if (!list) return;
+    const row = buildSalesItemRow('edithistory', { amount: '', category: '', productDesc: '' });
+    const amt = row.querySelector('.sales-item-amount');
+    if (amt) amt.addEventListener('input', updateEditHistoryTxTotal);
+    list.appendChild(row);
+    updateEditHistoryTxTotal();
+});
+document.getElementById('btnSaveEditHistoryTx')?.addEventListener('click', saveEditHistoryTx);
+document.getElementById('btnCancelEditHistoryTx')?.addEventListener('click', closeEditHistoryTxModal);
+document.getElementById('btnCloseEditHistoryTxModal')?.addEventListener('click', closeEditHistoryTxModal);
 
 document.getElementById('btnAddSalesItem')?.addEventListener('click', function () {
     const list = document.getElementById('salesItemsList');
@@ -1367,12 +1552,34 @@ function showHistoryModal(customerId) {
             content.style.fontSize = '14px';
             content.style.lineHeight = '1.6';
 
-            // Time header
+            // Time header + nút sửa chia tiền theo SP (giữ nguyên ngày gốc)
             const timeHeader = document.createElement('div');
-            timeHeader.style.fontSize = '12px';
-            timeHeader.style.color = 'var(--text-muted)';
-            timeHeader.style.fontWeight = 'bold';
-            timeHeader.innerText = `${formattedDate} LÚC ${formattedTime}`;
+            timeHeader.style.display = 'flex';
+            timeHeader.style.justifyContent = 'space-between';
+            timeHeader.style.alignItems = 'center';
+            timeHeader.style.gap = '8px';
+            const timeText = document.createElement('span');
+            timeText.style.fontSize = '12px';
+            timeText.style.color = 'var(--text-muted)';
+            timeText.style.fontWeight = 'bold';
+            timeText.innerText = `${formattedDate} LÚC ${formattedTime}`;
+            timeHeader.appendChild(timeText);
+            const editBtn = document.createElement('button');
+            editBtn.type = 'button';
+            editBtn.innerText = '✏️ Sửa chia tiền';
+            editBtn.title = 'Tách / chia lại số tiền theo từng sản phẩm (giữ nguyên ngày, giữ nguyên tổng)';
+            editBtn.style.cssText = 'flex-shrink: 0; font-size: 12px; font-weight: 700; color: var(--primary-color); background: #F1F5F9; border: 1px solid var(--border-color); border-radius: 6px; padding: 4px 10px; cursor: pointer;';
+            editBtn.onmouseenter = function () { editBtn.style.background = '#E2E8F0'; };
+            editBtn.onmouseleave = function () { editBtn.style.background = '#F1F5F9'; };
+            const singleIndex = customer.history ? customer.history.indexOf(groupItems[0]) : -1;
+            const isSyntheticAdjust = !group.batchId && (singleIndex === -1 || /Điều chỉnh trực tiếp|Cập nhật từ Supabase/i.test(String((groupItems[0] && groupItems[0].note) || '')));
+            if (!isSyntheticAdjust) {
+                editBtn.onclick = function (ev) {
+                    ev.stopPropagation();
+                    openEditHistoryTx(customer.customerId, group.batchId || null, singleIndex);
+                };
+                timeHeader.appendChild(editBtn);
+            }
             content.appendChild(timeHeader);
 
             // Action title
@@ -1738,13 +1945,21 @@ document.getElementById('btnCloseHistoryBtn')?.addEventListener('click', () => {
         showCustomerActionModal(currentActionCustomerId);
     }
 });
-document.getElementById('btnCloseAnalysisModal')?.addEventListener('click', () => { document.getElementById('analysisModal').style.display = 'none'; });
-document.getElementById('btnCloseAnalysisBtn')?.addEventListener('click', () => { document.getElementById('analysisModal').style.display = 'none'; });
-document.getElementById('btnAnalyzeCustomers')?.addEventListener('click', showAnalysisModal);
+document.getElementById('btnCloseAnalysisModal')?.addEventListener('click', () => returnFromReportPage('analysisModal'));
+document.getElementById('btnAnalyzeCustomers')?.addEventListener('click', () => {
+    showAnalysisModal();
+    showReportPageView('analysisModal', reportPageReturnTo, true);
+});
 
-document.getElementById('btnCloseProductAnalysisModal')?.addEventListener('click', () => { document.getElementById('productAnalysisModal').style.display = 'none'; });
-document.getElementById('btnCloseProductAnalysisBtn')?.addEventListener('click', () => { document.getElementById('productAnalysisModal').style.display = 'none'; });
-document.getElementById('btnAnalyzeProducts')?.addEventListener('click', showProductAnalysisModal);
+document.getElementById('btnCloseProductAnalysisModal')?.addEventListener('click', () => returnFromReportPage('productAnalysisModal'));
+document.getElementById('btnAnalyzeProducts')?.addEventListener('click', () => {
+    showProductAnalysisModal();
+    showReportPageView('productAnalysisModal', reportPageReturnTo, true);
+});
+
+document.getElementById('btnBackFromReport')?.addEventListener('click', () => returnFromReportPage('reportModal'));
+document.getElementById('btnBackFromAnalysis')?.addEventListener('click', () => returnFromReportPage('analysisModal'));
+document.getElementById('btnBackFromProductAnalysis')?.addEventListener('click', () => returnFromReportPage('productAnalysisModal'));
 
 // Export PDF cho modal Phân tích Khách hàng
 document.getElementById('btnExportAnalysisPDF')?.addEventListener('click', exportAnalysisToPDF);
@@ -1844,7 +2059,7 @@ document.getElementById('btnCancelEdit')?.addEventListener('click', function () 
 let currentActionCustomerId = null;
 
 function closeAllModals() {
-    const modalIds = ['customerActionModal', 'editCustomerInfoModal', 'updateSalesModal', 'customerFormModal', 'reportTypeModal', 'reportModal', 'activityHistoryModal', 'analysisModal', 'productAnalysisModal', 'historyModal', 'duplicateModal', 'deleteModal', 'warningModal', 'notificationModal', 'excelImportModal', 'kpi50MilestoneModal'];
+    const modalIds = ['customerActionModal', 'editCustomerInfoModal', 'updateSalesModal', 'customerFormModal', 'reportTypeModal', 'reportModal', 'activityHistoryModal', 'analysisModal', 'productAnalysisModal', 'historyModal', 'editHistoryTxModal', 'duplicateModal', 'deleteModal', 'warningModal', 'notificationModal', 'excelImportModal', 'kpi50MilestoneModal'];
     modalIds.forEach(id => {
         const el = document.getElementById(id);
         if (el) el.style.display = 'none';
@@ -2190,11 +2405,6 @@ document.getElementById('btnExportPDF').addEventListener('click', function () {
     pdfMake.createPdf(docDefinition).download('Bang_Xep_Hang_Doanh_So.pdf');
 });
 
-document.getElementById('btnCloseReport')?.addEventListener('click', () => {
-    const reportModal = document.getElementById('reportModal');
-    if (reportModal) reportModal.style.display = 'none';
-});
-
 let currentReportType = 'month'; // day | week | month | year
 
 function getReportTypeName(type) {
@@ -2369,6 +2579,73 @@ function populateYearSelect() {
     }
 }
 
+let reportPageReturnTo = 'ranking';
+let reportPageCameFromReport = false;
+
+function updateAnalysisBackButtons() {
+    const fromReport = reportPageCameFromReport === true;
+    const backAnalysis = document.getElementById('btnBackFromAnalysis');
+    const backProduct = document.getElementById('btnBackFromProductAnalysis');
+    if (backAnalysis) backAnalysis.classList.toggle('report-back-hidden', !fromReport);
+    if (backProduct) backProduct.classList.toggle('report-back-hidden', !fromReport);
+}
+
+function showReportPageView(pageId, returnTo, fromReport) {
+    const page = document.getElementById(pageId);
+    if (!page) return;
+    if (returnTo === 'dashboard' || returnTo === 'ranking') reportPageReturnTo = returnTo;
+    if (fromReport === true || fromReport === false) reportPageCameFromReport = fromReport;
+    else if (pageId === 'reportModal') reportPageCameFromReport = false;
+    closeAllModals();
+    page.classList.add('report-page-view');
+    page.style.display = 'flex';
+    updateAnalysisBackButtons();
+    if (window.location.hash !== `#/${pageId.replace('Modal', '').toLowerCase()}`) {
+        history.pushState({ reportPage: pageId }, '', `#/${pageId.replace('Modal', '').toLowerCase()}`);
+    }
+}
+
+function closeReportPageView(pageId, replaceHistory = false) {
+    const page = document.getElementById(pageId);
+    if (page) {
+        page.classList.remove('report-page-view');
+        page.style.display = 'none';
+    }
+    if (!replaceHistory) history.back();
+}
+
+function returnFromReportPage(pageId) {
+    const page = document.getElementById(pageId);
+    if (page) {
+        page.classList.remove('report-page-view');
+        page.style.display = 'none';
+    }
+    if (pageId === 'reportModal') {
+        openReportTypeModal();
+        return;
+    }
+    if (pageId === 'analysisModal' || pageId === 'productAnalysisModal') {
+        if (reportPageCameFromReport) {
+            showReportPageView('reportModal', reportPageReturnTo, true);
+            return;
+        }
+        switchAppPage(reportPageReturnTo === 'dashboard' ? 'dashboard' : 'ranking', false);
+        return;
+    }
+    switchAppPage(reportPageReturnTo === 'dashboard' ? 'dashboard' : 'ranking', false);
+}
+
+function handleReportPagePopState() {
+    ['reportModal', 'analysisModal', 'productAnalysisModal'].forEach(id => {
+        const page = document.getElementById(id);
+        if (page && page.classList.contains('report-page-view')) {
+            page.classList.remove('report-page-view');
+            page.style.display = 'none';
+        }
+    });
+}
+window.addEventListener('popstate', handleReportPagePopState);
+
 function openReportTypeModal() {
     const m = document.getElementById('reportTypeModal');
     if (m) m.style.display = 'flex';
@@ -2379,8 +2656,9 @@ function closeReportTypeModal() {
     if (m) m.style.display = 'none';
 }
 
-function openReportByType(type) {
+function openReportByType(type, returnTo) {
     currentReportType = type || 'month';
+    if (returnTo === 'dashboard' || returnTo === 'ranking') reportPageReturnTo = returnTo;
     if (type === 'day') populateDaySelect();
     if (type === 'week' && (!document.getElementById('reportWeekSelect')?.options?.length)) populateWeekSelect();
     if (type === 'month' && (!document.getElementById('reportMonthSelect')?.options?.length)) populateMonthSelect();
@@ -2388,6 +2666,7 @@ function openReportByType(type) {
     closeReportTypeModal();
     updateReportControlsVisibility();
     showRevenueReport();
+    showReportPageView('reportModal');
 }
 
 function showRevenueReport() {
@@ -2440,10 +2719,12 @@ function showRevenueReport() {
             transactionsInPeriod.forEach(item => {
                 const c = item.customer;
                 const tx = item.tx;
-                const formattedTime = item.date.toLocaleString('vi-VN', { day: '2-digit', month: '2-digit', year: 'numeric', hour: '2-digit', minute: '2-digit' });
+                const shortDate = item.date.toLocaleDateString('vi-VN', { day: '2-digit', month: '2-digit', year: '2-digit' });
+                const shortTime = item.date.toLocaleTimeString('vi-VN', { hour: '2-digit', minute: '2-digit' });
+                const formattedTime = `${shortDate} ${shortTime}`;
                 totalRevenuePeriod += Number(tx.amount || 0);
                 const tr = document.createElement('tr');
-                tr.innerHTML = `<td style="padding: 12px; border-bottom: 1px solid #e2e8f0; font-size: 13px; text-align: center;">${formattedTime}</td><td style="padding: 12px; border-bottom: 1px solid #e2e8f0; font-weight: bold; color: var(--primary-color);" class="customer-id-cell">${c.customerId || '-'}</td><td style="padding: 12px; border-bottom: 1px solid #e2e8f0;">${c.companyName || '-'}</td><td style="padding: 12px; border-bottom: 1px solid #e2e8f0; text-align: right; white-space: nowrap;">${formatSalesScaledByMagnitude(tx.amount)}</td><td style="padding: 12px; border-bottom: 1px solid #e2e8f0; font-size: 13px;">${tx.note || '-'}</td>`;
+                tr.innerHTML = `<td style="padding: 12px 8px; border-bottom: 1px solid #e2e8f0; font-size: 12.5px; text-align: center; white-space: nowrap;">${formattedTime}</td><td style="padding: 12px 14px; border-bottom: 1px solid #e2e8f0; font-weight: bold; color: var(--primary-color); white-space: nowrap; overflow: hidden; text-overflow: ellipsis;" class="customer-id-cell" title="${c.customerId || ''}">${c.customerId || '-'}</td><td style="padding: 12px 14px; border-bottom: 1px solid #e2e8f0;">${c.companyName || '-'}</td><td style="padding: 12px 14px; border-bottom: 1px solid #e2e8f0; text-align: right; white-space: nowrap;">${formatSalesScaledByMagnitude(tx.amount)}</td><td style="padding: 12px 14px; border-bottom: 1px solid #e2e8f0; font-size: 13px;">${tx.note || '-'}</td>`;
                 reportTableBody.appendChild(tr);
             });
             const reportTotalEl = document.getElementById('reportTotalRevenue');
@@ -2455,28 +2736,27 @@ function showRevenueReport() {
     }
 
     const reportModal = document.getElementById('reportModal');
-    if (reportModal) reportModal.style.display = 'flex';
+    if (reportModal && !reportModal.classList.contains('report-page-view')) reportModal.style.display = 'none';
 }
 
 document.getElementById('reportMonthSelect')?.addEventListener('change', showRevenueReport);
 document.getElementById('reportDaySelect')?.addEventListener('change', showRevenueReport);
 document.getElementById('reportWeekSelect')?.addEventListener('change', showRevenueReport);
 document.getElementById('reportYearSelect')?.addEventListener('change', showRevenueReport);
-document.getElementById('btnReportMonth')?.addEventListener('click', () => {
-    openReportTypeModal();
-});
-document.getElementById('btnSwitchReportType')?.addEventListener('click', () => {
-    openReportTypeModal();
-});
 document.getElementById('btnCloseReportTypeModal')?.addEventListener('click', closeReportTypeModal);
 document.getElementById('btnCloseReportTypeBtn')?.addEventListener('click', closeReportTypeModal);
 document.getElementById('reportTypeModal')?.addEventListener('click', (e) => {
     if (e.target && e.target.id === 'reportTypeModal') closeReportTypeModal();
 });
-document.getElementById('btnReportTypeDay')?.addEventListener('click', () => openReportByType('day'));
-document.getElementById('btnReportTypeWeek')?.addEventListener('click', () => openReportByType('week'));
-document.getElementById('btnReportTypeMonth')?.addEventListener('click', () => openReportByType('month'));
-document.getElementById('btnReportTypeYear')?.addEventListener('click', () => openReportByType('year'));
+function getReportTypeReturnTo() {
+    const dashboardPage = document.getElementById('pageDashboard');
+    if (dashboardPage && dashboardPage.style.display !== 'none') return 'dashboard';
+    return 'ranking';
+}
+document.getElementById('btnReportTypeDay')?.addEventListener('click', () => openReportByType('day', getReportTypeReturnTo()));
+document.getElementById('btnReportTypeWeek')?.addEventListener('click', () => openReportByType('week', getReportTypeReturnTo()));
+document.getElementById('btnReportTypeMonth')?.addEventListener('click', () => openReportByType('month', getReportTypeReturnTo()));
+document.getElementById('btnReportTypeYear')?.addEventListener('click', () => openReportByType('year', getReportTypeReturnTo()));
 
 // ========== LỊCH SỬ THAO TÁC TOÀN HỆ THỐNG (V1: gộp từ customers[].history) ==========
 // Không đụng backend. Không log được thao tác xóa / đăng nhập vì dữ liệu đó không còn trong history.
@@ -2840,34 +3120,11 @@ let chartProductDistributionInstance = null;
 let chartTopProductsByCustomersInstance = null;
 let chartDashboardTrendInstance = null;
 let chartDashboardClassInstance = null;
-let dashboardPeriodType = 'month';
 
-// ========== DASHBOARD TỔNG QUAN (tái dùng customers/history, không thêm truy vấn mới) ==========
+// ========== DASHBOARD TỔNG QUAN: cố định Tháng này (không chọn kỳ ở đây) ==========
+// Muốn xem Ngày/Tuần/Năm thì bấm Mở báo cáo, báo cáo vẫn đủ 4 kỳ.
 function getDashboardPeriod() {
     const now = new Date();
-    if (dashboardPeriodType === 'day') {
-        const start = new Date(now); start.setHours(0, 0, 0, 0);
-        const end = new Date(now); end.setHours(23, 59, 59, 999);
-        const prevStart = new Date(start); prevStart.setDate(prevStart.getDate() - 1);
-        const prevEnd = new Date(end); prevEnd.setDate(prevEnd.getDate() - 1);
-        return { type: 'day', start, end, prevStart, prevEnd, label: 'Hôm nay', compareLabel: 'hôm qua' };
-    }
-    if (dashboardPeriodType === 'week') {
-        const monday = getMondayOf(now);
-        const start = new Date(monday); start.setHours(0, 0, 0, 0);
-        const end = new Date(monday); end.setDate(end.getDate() + 6); end.setHours(23, 59, 59, 999);
-        const prevStart = new Date(start); prevStart.setDate(prevStart.getDate() - 7);
-        const prevEnd = new Date(end); prevEnd.setDate(prevEnd.getDate() - 7);
-        return { type: 'week', start, end, prevStart, prevEnd, label: 'Tuần này', compareLabel: 'tuần trước' };
-    }
-    if (dashboardPeriodType === 'year') {
-        const y = now.getFullYear();
-        const start = new Date(y, 0, 1); start.setHours(0, 0, 0, 0);
-        const end = new Date(y, 11, 31); end.setHours(23, 59, 59, 999);
-        const prevStart = new Date(y - 1, 0, 1); prevStart.setHours(0, 0, 0, 0);
-        const prevEnd = new Date(y - 1, 11, 31); prevEnd.setHours(23, 59, 59, 999);
-        return { type: 'year', start, end, prevStart, prevEnd, label: 'Năm nay', compareLabel: 'năm trước' };
-    }
     const start = new Date(now.getFullYear(), now.getMonth(), 1); start.setHours(0, 0, 0, 0);
     const end = new Date(now.getFullYear(), now.getMonth() + 1, 0); end.setHours(23, 59, 59, 999);
     const prevStart = new Date(now.getFullYear(), now.getMonth() - 1, 1); prevStart.setHours(0, 0, 0, 0);
@@ -3027,7 +3284,7 @@ function renderDashboard() {
     if (topCustEl) {
         topCustEl.innerHTML = topCustomers.length === 0 ? `<div style="color: #94a3b8;">Chưa có giao dịch trong kỳ.</div>` : topCustomers.map((it, idx) => `
             <div class="dash-row-item">
-                <span><strong style="color: #94a3b8;">#${idx + 1}</strong> <strong class="customer-id-cell" style="color: var(--primary-color); cursor: pointer;" data-dashboard-customer="${it.customerId}">${it.customerId}</strong> <span style="color: var(--text-muted);">${it.companyName || ''}</span></span>
+                <span><strong style="color: #94a3b8;">#${idx + 1}</strong> <strong style="color: var(--primary-color);">${it.customerId}</strong> <span style="color: var(--text-muted);">${it.companyName || ''}</span></span>
                 <strong style="color: #059669; white-space: nowrap;">${formatCurrency(it.amount)}</strong>
             </div>
         `).join('');
@@ -3057,7 +3314,7 @@ function renderDashboard() {
         recentEl.innerHTML = latest.length === 0 ? `<div style="color: #94a3b8;">Chưa có hoạt động.</div>` : latest.map(entry => {
             const prefix = (entry.tx.amount || 0) > 0 ? '+' : '';
             return `<div class="dash-row-item">
-                <span><span style="color: var(--text-muted);">${entry.date.toLocaleString('vi-VN', { day: '2-digit', month: '2-digit', hour: '2-digit', minute: '2-digit' })}</span> • <strong class="customer-id-cell" style="color: var(--primary-color); cursor: pointer;" data-dashboard-customer="${entry.c.customerId}">${entry.c.customerId}</strong> <span style="color: var(--text-muted);">${entry.tx.note || ''}</span></span>
+                <span><span style="color: var(--text-muted);">${entry.date.toLocaleString('vi-VN', { day: '2-digit', month: '2-digit', hour: '2-digit', minute: '2-digit' })}</span> • <strong style="color: var(--primary-color);">${entry.c.customerId}</strong> <span style="color: var(--text-muted);">${entry.tx.note || ''}</span></span>
                 <strong style="color: ${(entry.tx.amount || 0) >= 0 ? '#10b981' : '#ef4444'}; white-space: nowrap;">${prefix}${formatCurrency(entry.tx.amount || 0)}</strong>
             </div>`;
         }).join('');
@@ -3143,42 +3400,26 @@ function renderDashboardCharts(period) {
 
 document.getElementById('tabDashboard')?.addEventListener('click', () => switchAppPage('dashboard'));
 document.getElementById('tabRanking')?.addEventListener('click', () => switchAppPage('ranking'));
-document.getElementById('dashboardPeriodType')?.addEventListener('change', function () {
-    dashboardPeriodType = this.value || 'month';
-    renderDashboard();
-});
 document.getElementById('btnDashboardReport')?.addEventListener('click', () => {
-    currentReportType = dashboardPeriodType === 'day' ? 'day' : dashboardPeriodType === 'week' ? 'week' : dashboardPeriodType === 'year' ? 'year' : 'month';
-    openReportByType(currentReportType);
-});
-document.getElementById('btnDashboardAnalysis')?.addEventListener('click', () => {
-    const keepType = currentReportType;
-    currentReportType = dashboardPeriodType === 'day' ? 'day' : dashboardPeriodType === 'week' ? 'week' : dashboardPeriodType === 'year' ? 'year' : 'month';
-    if (currentReportType === 'day') populateDaySelect();
-    if (currentReportType === 'week' && (!document.getElementById('reportWeekSelect')?.options?.length)) populateWeekSelect();
-    if (currentReportType === 'month' && (!document.getElementById('reportMonthSelect')?.options?.length)) populateMonthSelect();
-    if (currentReportType === 'year' && (!document.getElementById('reportYearSelect')?.options?.length)) populateYearSelect();
-    updateReportControlsVisibility();
-    showAnalysisModal();
-    currentReportType = keepType;
-});
-document.getElementById('btnDashboardProducts')?.addEventListener('click', () => {
-    const keepType = currentReportType;
-    currentReportType = dashboardPeriodType === 'day' ? 'day' : dashboardPeriodType === 'week' ? 'week' : dashboardPeriodType === 'year' ? 'year' : 'month';
-    if (currentReportType === 'day') populateDaySelect();
-    if (currentReportType === 'week' && (!document.getElementById('reportWeekSelect')?.options?.length)) populateWeekSelect();
-    if (currentReportType === 'month' && (!document.getElementById('reportMonthSelect')?.options?.length)) populateMonthSelect();
-    if (currentReportType === 'year' && (!document.getElementById('reportYearSelect')?.options?.length)) populateYearSelect();
-    updateReportControlsVisibility();
-    showProductAnalysisModal();
-    currentReportType = keepType;
+    openReportTypeModal();
 });
 document.getElementById('pageDashboard')?.addEventListener('click', (e) => {
     const custEl = e.target && e.target.closest ? e.target.closest('[data-dashboard-customer]') : null;
     if (custEl && custEl.dataset && custEl.dataset.dashboardCustomer) {
+        e.preventDefault();
+        e.stopPropagation();
         showCustomerActionModal(custEl.dataset.dashboardCustomer);
     }
 });
+// Event delegation dự phòng cho Dashboard: hoạt động cả khi các card được render lại bằng innerHTML.
+document.addEventListener('click', (e) => {
+    const custEl = e.target && e.target.closest ? e.target.closest('[data-dashboard-customer]') : null;
+    if (!custEl || !custEl.dataset || !custEl.dataset.dashboardCustomer) return;
+    if (!document.getElementById('pageDashboard')?.contains(custEl)) return;
+    e.preventDefault();
+    e.stopPropagation();
+    showCustomerActionModal(custEl.dataset.dashboardCustomer);
+}, true);
 
 function showAnalysisModal() {
     const period = getReportPeriod();
@@ -3393,8 +3634,7 @@ function showAnalysisModal() {
 
     // Create charts
     createAnalysisCharts(classCountMap, activeCustomersList.slice(0, 5), last12Months.map(m => m.label), monthlyRevenues);
-
-    document.getElementById('analysisModal').style.display = 'flex';
+    // Hiển thị do showReportPageView đảm nhiệm, không set display thủ công ở đây
 }
 
 function showProductAnalysisModal() {
@@ -3565,8 +3805,7 @@ function showProductAnalysisModal() {
 
     // Create charts
     createProductCharts(topByCount, topByRevenue, productsArray);
-
-    document.getElementById('productAnalysisModal').style.display = 'flex';
+    // Hiển thị do showReportPageView đảm nhiệm, không set display thủ công ở đây
 }
 
 function createProductCharts(topByCount, topByRevenue, productsArray) {
@@ -4024,9 +4263,9 @@ if (btnConfirmExcelImport) {
 initAuthListener();
 
 // Custom Autocomplete Function
-function initCustomAutocomplete(inputId, datalistId) {
-    const input = document.getElementById(inputId);
-    if (!input) return;
+function initCustomAutocomplete(inputOrId, datalistId) {
+    const input = (typeof inputOrId === 'string') ? document.getElementById(inputOrId) : inputOrId;
+    if (!input || input.dataset.autocompleteBound) return;
 
     // Tạo wrapper và dropdown
     const wrapper = document.createElement('div');
@@ -4065,16 +4304,106 @@ function initCustomAutocomplete(inputId, datalistId) {
             return;
         }
 
-        items.forEach((item, index) => {
+        const isNameField = /category/i.test(datalistId || '') || /sales-item-name/i.test(input.className || '');
+        const isDescField = /productdesc/i.test(datalistId || '') || /sales-item-desc/i.test(input.className || '');
+        const isProductField = isNameField || isDescField;
+        const keyword = String(input.value || '').trim();
+        const shown = items.slice(0, 8);
+
+        const header = document.createElement('div');
+        header.className = 'suggest-header';
+        const headerLeft = document.createElement('span');
+        headerLeft.textContent = isNameField ? 'Tên sản phẩm' : isDescField ? 'Mô tả sản phẩm' : 'Gợi ý';
+        const headerRight = document.createElement('span');
+        headerRight.style.display = 'inline-flex';
+        headerRight.style.gap = '8px';
+        headerRight.style.alignItems = 'center';
+        const countBadge = document.createElement('span');
+        countBadge.className = 'suggest-count';
+        countBadge.textContent = shown.length + (items.length > shown.length ? '+' : '');
+        countBadge.title = items.length + ' gợi ý';
+        const hint = document.createElement('span');
+        hint.className = 'suggest-hint';
+        hint.textContent = '↑↓ chọn • Enter dùng';
+        headerRight.appendChild(countBadge);
+        headerRight.appendChild(hint);
+        header.appendChild(headerLeft);
+        header.appendChild(headerRight);
+        dropdown.appendChild(header);
+
+        const avatarPalette = [
+            'linear-gradient(135deg, #1B362B, #2E5A46)',
+            'linear-gradient(135deg, #2563EB, #60A5FA)',
+            'linear-gradient(135deg, #D97706, #F59E0B)',
+            'linear-gradient(135deg, #7C3AED, #A78BFA)',
+            'linear-gradient(135deg, #059669, #34D399)',
+            'linear-gradient(135deg, #DC2626, #F87171)',
+            'linear-gradient(135deg, #0891B2, #22D3EE)',
+            'linear-gradient(135deg, #C2410C, #FB923C)'
+        ];
+        function avatarBgFor(text) {
+            let h = 0;
+            const s = String(text || '');
+            for (let i = 0; i < s.length; i++) h = (h * 31 + s.charCodeAt(i)) >>> 0;
+            return avatarPalette[h % avatarPalette.length];
+        }
+
+        shown.forEach((item, index) => {
             const div = document.createElement('div');
             div.className = 'custom-autocomplete-item';
-            div.textContent = item;
             div.setAttribute('data-index', index);
+            div.title = item;
+
+            const avatar = document.createElement('span');
+            avatar.className = 'suggest-avatar';
+            avatar.style.background = avatarBgFor(item);
+            const firstChar = String(item || '').trim().charAt(0) || (isProductField ? '📦' : '🔍');
+            avatar.textContent = /[A-Za-zÀ-ỹ]/.test(firstChar) ? firstChar.toUpperCase() : (isProductField ? '📦' : '🔍');
+
+            const body = document.createElement('span');
+            body.className = 'suggest-body';
+
+            const text = document.createElement('span');
+            text.className = 'suggest-text';
+            if (keyword) {
+                const lowerItem = String(item).toLowerCase();
+                const lowerKey = keyword.toLowerCase();
+                const pos = lowerItem.indexOf(lowerKey);
+                if (pos >= 0) {
+                    const before = document.createTextNode(String(item).slice(0, pos));
+                    const mark = document.createElement('mark');
+                    mark.textContent = String(item).slice(pos, pos + keyword.length);
+                    const after = document.createTextNode(String(item).slice(pos + keyword.length));
+                    text.appendChild(before);
+                    text.appendChild(mark);
+                    text.appendChild(after);
+                } else {
+                    text.textContent = item;
+                }
+            } else {
+                text.textContent = item;
+            }
+
+            const sub = document.createElement('span');
+            sub.className = 'suggest-sub';
+            sub.textContent = isNameField ? 'Tên sản phẩm • nhấn để điền' : isDescField ? 'Mô tả chi tiết • nhấn để điền' : 'Nhấn để điền';
+
+            body.appendChild(text);
+            body.appendChild(sub);
+
+            const go = document.createElement('span');
+            go.className = 'suggest-go';
+            go.textContent = '→';
+
+            div.appendChild(avatar);
+            div.appendChild(body);
+            div.appendChild(go);
 
             div.addEventListener('click', () => {
                 input.value = item;
                 dropdown.classList.remove('show');
                 input.focus();
+                input.dispatchEvent(new Event('input', { bubbles: true }));
             });
 
             dropdown.appendChild(div);
@@ -4144,6 +4473,13 @@ function initCustomAutocomplete(inputId, datalistId) {
             dropdown.classList.remove('show');
         }
     });
+    input.dataset.autocompleteBound = '1';
+    return { input, dropdown, wrapper };
+}
+
+// Bản bind trực tiếp cho ô nhập tạo động (dòng SP thêm nhiều lần) — dùng chung initCustomAutocomplete hiện đại
+function bindAutocompleteElement(input, datalistId) {
+    return initCustomAutocomplete(input, datalistId);
 }
 
 // ========== CHUẨN HÓA TÊN SẢN PHẨM (CHỈ TẦNG HIỂN THỊ/PHÂN TÍCH - KHÔNG SỬA DỮ LIỆU GỐC) ==========
