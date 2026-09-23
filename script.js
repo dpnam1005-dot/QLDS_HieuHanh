@@ -3275,7 +3275,12 @@ function renderDashboard() {
             <div class="dash-kpi-card">
                 <div class="dash-kpi-label">TỔNG KHÁCH HÀNG</div>
                 <div class="dash-kpi-value">${customers.length}</div>
-                <div class="dash-kpi-sub">Tổng doanh số hệ thống: <strong>${formatCurrency(customers.reduce((s, c) => s + (c.sales || 0), 0))}</strong></div>
+                <div class="dash-kpi-sub">${Object.keys(custMap).length} khách phát sinh trong kỳ</div>
+            </div>
+            <div class="dash-kpi-card">
+                <div class="dash-kpi-label">TỔNG DOANH SỐ HỆ THỐNG</div>
+                <div class="dash-kpi-value" style="color: #3b82f6;">${formatCurrency(customers.reduce((s, c) => s + (c.sales || 0), 0))}</div>
+                <div class="dash-kpi-sub">Cộng dồn toàn bộ khách hàng</div>
             </div>
         `;
     }

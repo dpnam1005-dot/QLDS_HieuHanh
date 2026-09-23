@@ -269,16 +269,16 @@ tbody tr:hover { background-color: #F8F3ED; cursor: pointer; }
     #pageRanking .table-section { min-height: calc(100vh - 160px); }
 }
 /* ========== DASHBOARD ========== */
-#dashboardKpiGrid { grid-template-columns: repeat(4, 1fr); }
+#dashboardKpiGrid { grid-template-columns: repeat(5, 1fr); }
 .dash-kpi-card { background: #fff; border: 1px solid #e2e8f0; border-radius: 10px; padding: 12px 14px; box-shadow: 0 1px 3px rgba(0,0,0,0.03); }
 .dash-kpi-label { font-size: 11px; color: var(--text-muted); font-weight: 800; letter-spacing: 0.3px; margin-bottom: 4px; }
 .dash-kpi-value { font-size: 17px; font-weight: 800; color: var(--text-main); }
 .dash-kpi-sub { font-size: 11px; color: var(--text-muted); margin-top: 4px; border-top: 1px solid #f1f5f9; padding-top: 4px; }
 .dash-row-item { display: flex; justify-content: space-between; align-items: center; gap: 8px; padding: 8px 0; border-bottom: 1px solid #f1f5f9; }
 .dash-row-item:last-child { border-bottom: none; }
-/* Dashboard vừa khít màn 21 inch: 4 KPI + biểu đồ gói trong 1 màn hình */
+/* Dashboard vừa khít màn 21 inch: 5 KPI + biểu đồ gói trong 1 màn hình */
 @media (min-width: 1400px) {
-    #dashboardKpiGrid { grid-template-columns: repeat(4, 1fr); gap: 10px; margin-bottom: 12px; }
+    #dashboardKpiGrid { grid-template-columns: repeat(5, 1fr); gap: 10px; margin-bottom: 12px; }
     .dash-kpi-card { padding: 10px 12px; }
     .dash-kpi-value { font-size: 15.5px; }
     .dashboard-charts-grid { gap: 12px !important; margin-bottom: 12px !important; }
