@@ -39,8 +39,29 @@ window.onerror = function (message, source, lineno, colno, error) {
 };
 
 // ========== CONFIG ==========
+// Giữ các giá trị dùng chung ở một chỗ để bảo trì mà không phải sửa logic dữ liệu.
+const APP_CONFIG = Object.freeze({
+    supabaseTable: 'Quan ly ban hang',
+    fetchTimeoutMs: 10000,
+    storageKeys: Object.freeze({
+        customersCache: 'qlds_customers_cache_v3',
+        currentPage: 'qlds_current_page'
+    })
+});
+
 const SB_URL = 'https://ozpaslchfhcdechmrhlv.supabase.co';
 const SB_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Im96cGFzbGNoZmhjZGVjaG1yaGx2Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODMxMTQxMDUsImV4cCI6MjA5ODY5MDEwNX0.Ekzyal8ona_CjoBkHV19iaDm20DXqCV4MJanSseZ1lo';
+
+function parseJsonArray(value) {
+    if (Array.isArray(value)) return value;
+    if (typeof value !== 'string' || !value.trim()) return [];
+    try {
+        const parsed = JSON.parse(value);
+        return Array.isArray(parsed) ? parsed : [];
+    } catch {
+        return [];
+    }
+}
 
 let supabaseClient;
 try {
@@ -245,16 +266,7 @@ function initAuthListener() {
 }
 
 function mapFromSupabase(row) {
-    let parsedHistory = [];
-    if (typeof row.history === 'string') {
-        try {
-            parsedHistory = JSON.parse(row.history);
-        } catch {
-            parsedHistory = [];
-        }
-    } else if (Array.isArray(row.history)) {
-        parsedHistory = row.history;
-    }
+    let parsedHistory = parseJsonArray(row.history);
 
     const topCategory = row.product_name || '';
     const topProductDesc = row.product_description || '';
@@ -791,7 +803,7 @@ async function hideLoadingBar() {
 }
 
 // Bộ nhớ đệm LocalStorage giúp nạp ứng dụng tức thì 0ms mà không phải chờ mạng
-const LOCAL_CACHE_KEY = 'qlds_customers_cache_v3';
+const LOCAL_CACHE_KEY = APP_CONFIG.storageKeys.customersCache;
 
 function clearCustomerCache() {
     try {
@@ -805,7 +817,7 @@ function loadCachedCustomers() {
     try {
         const cached = localStorage.getItem(LOCAL_CACHE_KEY);
         if (cached) {
-            const parsed = JSON.parse(cached);
+            const parsed = parseJsonArray(cached);
             if (Array.isArray(parsed) && parsed.length > 0) {
                 customers = parsed;
                 renderTable();
@@ -845,8 +857,8 @@ async function fetchCustomers() {
             throw new Error("Kết nối Supabase chưa được thiết lập. Hãy kiểm tra lỗi khởi tạo ở trên.");
         }
 
-        const timeout = new Promise((_, reject) => setTimeout(() => reject(new Error("Quá thời gian 10 giây. Hãy kiểm tra lại kết nối mạng!")), 10000));
-        const fetchPromise = supabaseClient.from('Quan ly ban hang').select('*').order('sales', { ascending: false });
+        const timeout = new Promise((_, reject) => setTimeout(() => reject(new Error(`Quá thời gian ${APP_CONFIG.fetchTimeoutMs / 1000} giây. Hãy kiểm tra lại kết nối mạng!`)), APP_CONFIG.fetchTimeoutMs));
+        const fetchPromise = supabaseClient.from(APP_CONFIG.supabaseTable).select('*').order('sales', { ascending: false });
 
         const { data, error } = await Promise.race([fetchPromise, timeout]);
 
@@ -1394,7 +1406,7 @@ async function saveEditHistoryTx() {
     let error = null;
     try {
         const payload = mapToSupabase(draft);
-        ({ error } = await supabaseClient.from('Quan ly ban hang').update(payload).eq('customer_id', customer.customerId));
+        ({ error } = await supabaseClient.from(APP_CONFIG.supabaseTable).update(payload).eq('customer_id', customer.customerId));
     } catch (err) {
         error = err;
     }
@@ -1934,14 +1946,14 @@ async function proceedWithSave(data, isUpdating) {
             delete data._batchItems;
             try {
                 const payload = mapToSupabase(data);
-                ({ error: saveError } = await supabaseClient.from('Quan ly ban hang').insert([payload]));
+                ({ error: saveError } = await supabaseClient.from(APP_CONFIG.supabaseTable).insert([payload]));
             } catch (err) {
                 saveError = err;
             }
         } else {
             try {
                 const payload = mapToSupabase(data);
-                ({ error: saveError } = await supabaseClient.from('Quan ly ban hang').update(payload).eq('customer_id', data.customerId));
+                ({ error: saveError } = await supabaseClient.from(APP_CONFIG.supabaseTable).update(payload).eq('customer_id', data.customerId));
             } catch (err) {
                 saveError = err;
             }
@@ -2022,7 +2034,7 @@ document.getElementById('btnConfirmDelete')?.addEventListener('click', async fun
     if (customerToDelete) {
         document.getElementById('btnConfirmDelete').innerText = 'Đang xóa...';
         document.getElementById('btnConfirmDelete').disabled = true;
-        const { error } = await supabaseClient.from('Quan ly ban hang').delete().eq('customer_id', customerToDelete);
+        const { error } = await supabaseClient.from(APP_CONFIG.supabaseTable).delete().eq('customer_id', customerToDelete);
         document.getElementById('btnConfirmDelete').innerText = 'Xóa';
         document.getElementById('btnConfirmDelete').disabled = false;
 
@@ -2243,7 +2255,7 @@ document.getElementById('editCustomerInfoForm')?.addEventListener('submit', asyn
     let error = null;
     try {
         const payload = mapToSupabase(draft);
-        ({ error } = await supabaseClient.from('Quan ly ban hang').update(payload).eq('customer_id', customer.customerId));
+        ({ error } = await supabaseClient.from(APP_CONFIG.supabaseTable).update(payload).eq('customer_id', customer.customerId));
     } catch (err) {
         error = err;
     }
@@ -2322,7 +2334,7 @@ document.getElementById('updateSalesForm')?.addEventListener('submit', async fun
     let error = null;
     try {
         const payload = mapToSupabase(draft);
-        ({ error } = await supabaseClient.from('Quan ly ban hang').update(payload).eq('customer_id', customer.customerId));
+        ({ error } = await supabaseClient.from(APP_CONFIG.supabaseTable).update(payload).eq('customer_id', customer.customerId));
     } catch (err) {
         error = err;
     }
@@ -2413,7 +2425,7 @@ document.getElementById('btnConfirmModal')?.addEventListener('click', async func
         if (btn) { btn.innerText = 'Đang ghi đè...'; btn.disabled = true; }
 
         const payload = mapToSupabase(pendingCustomerData);
-        const { error } = await supabaseClient.from('Quan ly ban hang').update(payload).eq('customer_id', pendingCustomerData.customerId);
+        const { error } = await supabaseClient.from(APP_CONFIG.supabaseTable).update(payload).eq('customer_id', pendingCustomerData.customerId);
 
         if (btn) { btn.innerText = 'Có, Cập nhật'; btn.disabled = false; }
         if (error) alert("Gặp lỗi khi ghi đè dữ liệu: " + error.message);
@@ -3226,7 +3238,7 @@ function getPageFromHash() {
         const h = String(window.location.hash || '').toLowerCase();
         if (h.indexOf('dashboard') !== -1) return 'dashboard';
         if (h.indexOf('ranking') !== -1) return 'ranking';
-        const saved = localStorage.getItem('qlds_current_page');
+        const saved = localStorage.getItem(APP_CONFIG.storageKeys.currentPage);
         if (saved === 'dashboard') return 'dashboard';
         return 'ranking';
     } catch (e) { return 'ranking'; }
@@ -3244,7 +3256,7 @@ function switchAppPage(page, push = true) {
     if (tabDashboard) tabDashboard.classList.toggle('active', showDashboard);
     if (tabRanking) tabRanking.classList.toggle('active', !showDashboard);
     if (showDashboard) renderDashboard();
-    try { localStorage.setItem('qlds_current_page', normalized); } catch (e) {}
+    try { localStorage.setItem(APP_CONFIG.storageKeys.currentPage, normalized); } catch (e) {}
     if (push) {
         const targetHash = showDashboard ? '#/dashboard' : '#/ranking';
         if (window.location.hash !== targetHash) window.location.hash = targetHash;
@@ -4312,7 +4324,7 @@ if (btnConfirmExcelImport) {
                 notificationMessage.innerHTML = "Không thể đọc dữ liệu! Hãy đảm bảo file Excel của bạn có chứa cột tiêu đề <strong>Mã KH</strong>.";
                 notificationModal.style.display = 'flex';
             } else {
-                const { error } = await supabaseClient.from('Quan ly ban hang').upsert(payloadsToUpsert, { onConflict: 'customer_id' });
+                const { error } = await supabaseClient.from(APP_CONFIG.supabaseTable).upsert(payloadsToUpsert, { onConflict: 'customer_id' });
                 if (error) {
                     alert("Gặp sự cố khi đồng bộ lên Supabase: " + error.message);
                 } else {
