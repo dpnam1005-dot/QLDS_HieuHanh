@@ -1,3 +1,14 @@
+// Escape data values before placing them inside an HTML template.
+function escapeHtml(value) {
+    return String(value ?? '').replace(/[&<>"']/g, char => ({
+        '&': '&amp;',
+        '<': '&lt;',
+        '>': '&gt;',
+        '"': '&quot;',
+        "'": '&#39;'
+    })[char]);
+}
+
 // Bắt lỗi toàn hệ thống và hiển thị trực tiếp lên giao diện để dễ debug
 window.onerror = function (message, source, lineno, colno, error) {
     console.error("Lỗi hệ thống:", message, source, lineno, colno, error);
@@ -7,7 +18,7 @@ window.onerror = function (message, source, lineno, colno, error) {
     const authErrorMsg = document.getElementById('authErrorMsg');
     const authContainer = document.getElementById('authContainer');
     if (authErrorMsg && authContainer && authContainer.style.display !== 'none') {
-        authErrorMsg.innerHTML = `<span style="color: #ef4444; font-weight: bold;">Lỗi hệ thống (JS):</span> ${message}<br><small style="color: var(--text-muted); font-size: 11px;">Tại: ${source ? source.split('/').pop() : 'unknown'}:${lineno}</small>`;
+        authErrorMsg.textContent = 'Đã xảy ra lỗi hệ thống. Vui lòng tải lại trang và thử lại.';
         authErrorMsg.style.display = 'block';
         const btnSubmit = document.getElementById('btnAuthSubmit');
         if (btnSubmit) {
@@ -19,8 +30,8 @@ window.onerror = function (message, source, lineno, colno, error) {
         const tableBody = document.getElementById('tableBody');
         if (tableBody) {
             tableBody.innerHTML = `<tr><td colspan="8" class="text-center" style="color: #ef4444; padding: 30px; line-height: 1.6;">
-                <b>Lỗi hệ thống (JavaScript Error):</b> ${message}<br>
-                <small style="color: var(--text-muted);">Tại: ${source ? source.split('/').pop() : 'unknown'}:${lineno}:${colno}</small>
+                <b>Đã xảy ra lỗi hệ thống.</b><br>
+                <small style="color: var(--text-muted);">Vui lòng tải lại trang và thử lại.</small>
             </td></tr>`;
         }
     }
@@ -39,11 +50,11 @@ try {
     supabaseClient = window.supabase.createClient(SB_URL, SB_KEY);
 } catch (e) {
     console.error(e);
-    document.addEventListener("DOMContentLoaded", () => {
-        const tableBody = document.getElementById('tableBody');
-        if (tableBody) {
-            tableBody.innerHTML = `<tr><td colspan="8" class="text-center" style="color: #ef4444; padding: 30px; line-height: 1.6;">
-                <b>Lỗi khởi tạo ứng dụng:</b> ${e.message}<br>
+        document.addEventListener("DOMContentLoaded", () => {
+            const tableBody = document.getElementById('tableBody');
+            if (tableBody) {
+                tableBody.innerHTML = `<tr><td colspan="8" class="text-center" style="color: #ef4444; padding: 30px; line-height: 1.6;">
+                <b>Không thể khởi tạo ứng dụng.</b><br>
                 <span style="color: var(--text-muted); font-size: 13px;">Vui lòng thử đổi DNS hoặc bật VPN, rồi tải lại trang (F5).</span>
             </td></tr>`;
         }
@@ -135,27 +146,19 @@ if (authForm) {
             }
         } catch (err) {
             console.error("Lỗi đăng nhập chi tiết:", err);
-            const errDetail = err.message || err.error_description || (typeof err === 'object' ? JSON.stringify(err) : String(err));
-            const errCode = err.code || err.status || '';
-
-            let rawErrorBox = `
+            authErrorMsg.innerHTML = `
                 <div style="background: #FEF2F2; border: 1px solid #FCA5A5; padding: 14px; border-radius: 10px; text-align: left; margin-top: 12px; box-shadow: 0 4px 12px rgba(220, 38, 38, 0.08);">
                     <div style="font-size: 14px; font-weight: 800; color: #DC2626; margin-bottom: 6px; display: flex; align-items: center; gap: 6px;">
                         <span>❌</span> <span>Đăng Nhập Thất Bại</span>
                     </div>
-                    <div style="font-size: 12px; color: #7F1D1D; margin-bottom: 4px; font-weight: bold;">Thông điệp lỗi từ hệ thống Supabase:</div>
-                    <div style="background: #FFFFFF; border: 1px solid #FECACA; border-radius: 6px; padding: 8px 10px; font-family: monospace; font-size: 12px; color: #B91C1C; word-break: break-all; margin-bottom: 8px;">
-                        ${errCode ? '<strong>[' + errCode + ']</strong> ' : ''}${errDetail}
-                    </div>
+                    <div style="font-size: 12px; color: #7F1D1D; line-height: 1.5; margin-bottom: 8px;">Thông tin đăng nhập chưa đúng hoặc kết nối đang gặp sự cố. Vui lòng kiểm tra lại và thử lại.</div>
                     <div style="font-size: 11px; color: #64748B; line-height: 1.5;">
                         💡 <strong>Gợi ý khắc phục:</strong><br>
-                        • Nếu lỗi <i>Invalid login credentials</i>: Vui lòng kiểm tra lại ID/Email và Mật khẩu (chú ý gõ chữ hoa/thường).<br>
-                        • Nếu lỗi <i>Failed to fetch</i>: Do kết nối mạng bị chặn, thử chuyển sang 4G hoặc đổi DNS.
+                        • Kiểm tra lại ID/Email và Mật khẩu (chú ý chữ hoa/thường).<br>
+                        • Nếu mạng không ổn định, thử tải lại trang hoặc đổi DNS.
                     </div>
                 </div>
             `;
-
-            authErrorMsg.innerHTML = rawErrorBox;
             authErrorMsg.style.display = 'block';
             if (btnSubmit) {
                 btnSubmit.innerText = 'Đăng nhập';
@@ -172,6 +175,7 @@ if (btnLogout) {
             try {
                 if (supabaseClient) {
                     await supabaseClient.auth.signOut();
+                    clearCustomerCache();
                     currentUserEmail = null;
                     if (authContainer) authContainer.style.display = 'flex';
                     if (mainContainer) mainContainer.style.display = 'none';
@@ -206,6 +210,7 @@ function initAuthListener() {
                 fetchCustomers();
             } else {
                 // Chưa đăng nhập / Đăng xuất
+                clearCustomerCache();
                 currentUserEmail = null;
                 if (authContainer) authContainer.style.display = 'flex';
                 if (mainContainer) mainContainer.style.display = 'none';
@@ -229,6 +234,8 @@ function initAuthListener() {
                 if (mainContainer) mainContainer.style.display = 'block';
                 if (btnLogout) btnLogout.style.display = 'block';
                 fetchCustomers();
+            } else {
+                clearCustomerCache();
             }
         });
     } else {
@@ -786,6 +793,14 @@ async function hideLoadingBar() {
 // Bộ nhớ đệm LocalStorage giúp nạp ứng dụng tức thì 0ms mà không phải chờ mạng
 const LOCAL_CACHE_KEY = 'qlds_customers_cache_v3';
 
+function clearCustomerCache() {
+    try {
+        localStorage.removeItem(LOCAL_CACHE_KEY);
+    } catch (e) {
+        console.warn("Lỗi xóa cache local:", e);
+    }
+}
+
 function loadCachedCustomers() {
     try {
         const cached = localStorage.getItem(LOCAL_CACHE_KEY);
@@ -883,6 +898,11 @@ const btnClearSearch = document.getElementById('btnClearSearch');
 const filterClassification = document.getElementById('filterClassification');
 const tableBodyElement = document.getElementById('tableBody');
 const paginationContainer = document.getElementById('pagination');
+
+tableBodyElement?.addEventListener('click', (event) => {
+    const cell = event.target.closest('[data-customer-action]');
+    if (cell && cell.dataset.customerAction) showCustomerActionModal(cell.dataset.customerAction);
+});
 
 // Thêm sự kiện tìm kiếm & nút X xóa nhanh từ khóa
 if (searchInput) {
@@ -1286,7 +1306,7 @@ function openEditHistoryTx(customerId, batchId, singleIndex) {
     if (metaEl) {
         const d = new Date(keepDate);
         const when = isNaN(d.getTime()) ? keepDate : d.toLocaleString('vi-VN', { day: '2-digit', month: '2-digit', year: 'numeric', hour: '2-digit', minute: '2-digit' });
-        metaEl.innerHTML = `<strong>${customer.customerId}</strong>${customer.companyName ? ` - ${customer.companyName}` : ''}<br><span style="color: var(--text-muted);">Ngày gốc (giữ nguyên): <strong>${when}</strong> • Số dòng hiện tại: <strong>${entries.length}</strong></span>`;
+        metaEl.innerHTML = `<strong>${escapeHtml(customer.customerId)}</strong>${customer.companyName ? ` - ${escapeHtml(customer.companyName)}` : ''}<br><span style="color: var(--text-muted);">Ngày gốc (giữ nguyên): <strong>${escapeHtml(when)}</strong> • Số dòng hiện tại: <strong>${entries.length}</strong></span>`;
     }
     const list = document.getElementById('editHistoryTxItems');
     if (list) {
@@ -1469,8 +1489,8 @@ function showHistoryModal(customerId) {
 
     const metaContainer = document.getElementById('historyModalMeta');
     metaContainer.innerHTML = `
-        <strong>Mã khách hàng:</strong> ${customer.customerId} <br>
-        <strong>Tên Công ty:</strong> ${customer.companyName || '-'}
+        <strong>Mã khách hàng:</strong> ${escapeHtml(customer.customerId)} <br>
+        <strong>Tên Công ty:</strong> ${escapeHtml(customer.companyName || '-')}
     `;
 
     const timelineContainer = document.getElementById('historyTimelineContainer');
@@ -1615,7 +1635,7 @@ function showHistoryModal(customerId) {
             detailsBox.style.marginTop = '6px';
 
             let detailsHtml = `<ul style="margin: 0; padding-left: 15px; list-style-type: disc; color: #475569; font-size: 13px;">`;
-            detailsHtml += `<li>Thực hiện bởi: <strong>${user}</strong></li>`;
+            detailsHtml += `<li>Thực hiện bởi: <strong>${escapeHtml(user)}</strong></li>`;
             if (isBatch) {
                 const batchTotal = groupItems.reduce((sum, it) => sum + (Number(it.amount) || 0), 0);
                 const batchPrefix = batchTotal > 0 ? '+' : '';
@@ -1623,15 +1643,15 @@ function showHistoryModal(customerId) {
                 detailsHtml += `</ul><ol style="margin: 8px 0 0 15px; padding-left: 15px; color: #475569; font-size: 13px;">`;
                 groupItems.forEach((it, idx) => {
                     const itemParts = [];
-                    if (it.category) itemParts.push(`<strong style="color: var(--primary-color);">${it.category}</strong>`);
-                    if (it.productDesc) itemParts.push(`${it.productDesc}`);
+                    if (it.category) itemParts.push(`<strong style="color: var(--primary-color);">${escapeHtml(it.category)}</strong>`);
+                    if (it.productDesc) itemParts.push(`${escapeHtml(it.productDesc)}`);
                     const itemName = itemParts.length > 0 ? itemParts.join(' - ') : `Sản phẩm ${idx + 1}`;
                     const amtPrefix = (it.amount || 0) > 0 ? '+' : '';
                     detailsHtml += `<li>${itemName}: <strong style="color: ${(it.amount || 0) >= 0 ? '#10b981' : '#ef4444'}">${amtPrefix}${formatCurrency(it.amount || 0)}</strong></li>`;
                 });
                 detailsHtml += `</ol><ul style="margin: 8px 0 0 0; padding-left: 15px; list-style-type: disc; color: #475569; font-size: 13px;">`;
                 const batchNote = (groupItems[0] && (groupItems[0].batchNote || '')) || '';
-                if (batchNote) detailsHtml += `<li>Ghi chú đợt: ${batchNote}</li>`;
+                if (batchNote) detailsHtml += `<li>Ghi chú đợt: ${escapeHtml(batchNote)}</li>`;
                 detailsHtml += `</ul>`;
             } else {
                 const item = groupItems[0];
@@ -1642,10 +1662,10 @@ function showHistoryModal(customerId) {
                 const finalCategory = item.category || customer.category || '';
                 const finalProductDesc = item.productDesc || customer.productDesc || '';
 
-                const categoryText = finalCategory ? `<strong style="color: var(--primary-color);">${finalCategory}</strong>` : '<span style="color: #94a3b8;">-</span>';
+                const categoryText = finalCategory ? `<strong style="color: var(--primary-color);">${escapeHtml(finalCategory)}</strong>` : '<span style="color: #94a3b8;">-</span>';
                 detailsHtml += `<li>Tên sản phẩm: ${categoryText}</li>`;
 
-                const productDescText = finalProductDesc ? `<span style="color: #64748b;">${finalProductDesc}</span>` : '<span style="color: #94a3b8;">-</span>';
+                const productDescText = finalProductDesc ? `<span style="color: #64748b;">${escapeHtml(finalProductDesc)}</span>` : '<span style="color: #94a3b8;">-</span>';
                 detailsHtml += `<li>Mô tả: ${productDescText}</li>`;
                 detailsHtml += `</ul>`;
             }
@@ -1833,16 +1853,22 @@ function renderTable() {
     paginatedItems.forEach((customer, index) => {
         const tr = document.createElement('tr');
         let maKhColor = (customer.classification && classificationColors[customer.classification]) ? classificationColors[customer.classification] : 'var(--primary-color)';
-        let maKhTitle = customer.classification ? `Phân loại: ${customer.classification}` : 'Chưa phân loại';
+        let maKhTitle = customer.classification ? `Phân loại: ${escapeHtml(customer.classification)}` : 'Chưa phân loại';
+        const customerId = escapeHtml(customer.customerId || '');
+        const taxId = escapeHtml(customer.taxId || '');
+        const companyName = escapeHtml(customer.companyName || '');
+        const contactName = escapeHtml(customer.contactName || '');
+        const phone = escapeHtml(formatPhoneNumber(customer.phone));
+        const notes = escapeHtml(customer.notes || '');
         tr.innerHTML = `
             <td class="text-center"><strong>${startIndex + index + 1}</strong></td>
-            <td class="nowrap customer-id-cell" style="color: ${maKhColor}; font-weight: bold; cursor: pointer;" title="${customer.customerId} - ${maKhTitle}" onclick="showCustomerActionModal('${customer.customerId}')">${customer.customerId}</td>
-            <td class="nowrap" title="${customer.taxId || ''}">${customer.taxId || '-'}</td>
-            <td title="${customer.companyName || ''}"><strong>${customer.companyName || '-'}</strong></td>
-            <td class="nowrap" title="${customer.contactName || ''}">${customer.contactName || '-'}</td>
-            <td class="nowrap" title="${formatPhoneNumber(customer.phone)}">${formatPhoneNumber(customer.phone)}</td>
+            <td class="nowrap customer-id-cell" style="color: ${maKhColor}; font-weight: bold; cursor: pointer;" title="${customerId} - ${maKhTitle}" data-customer-action="${customerId}">${customerId || '-'}</td>
+            <td class="nowrap" title="${taxId}">${taxId || '-'}</td>
+            <td title="${companyName}"><strong>${companyName || '-'}</strong></td>
+            <td class="nowrap" title="${contactName}">${contactName || '-'}</td>
+            <td class="nowrap" title="${phone}">${phone}</td>
             <td class="text-right money nowrap">${formatSalesScaledByMagnitude(customer.sales)}</td>
-            <td title="${customer.notes || ''}">${customer.notes || '-'}</td>
+            <td title="${notes}">${notes || '-'}</td>
         `;
         tableBodyElement.appendChild(tr);
     });
@@ -1889,7 +1915,7 @@ async function proceedWithSave(data, isUpdating) {
 
         notificationTitle.innerText = "⚠️ Cảnh Báo Trùng Mã Khách Hàng";
         notificationTitle.style.color = "#d97706";
-        notificationMessage.innerHTML = `Mã khách hàng <strong style="color: #ef4444; font-size: 16px;">"${data.customerId}"</strong> đã tồn tại trên hệ thống!<br><br><span style="color: #64748b; font-size: 13px;">Vui lòng kiểm tra lại danh sách hoặc nhập một Mã KH khác.</span>`;
+        notificationMessage.innerHTML = `Mã khách hàng <strong style="color: #ef4444; font-size: 16px;">"${escapeHtml(data.customerId)}"</strong> đã tồn tại trên hệ thống!<br><br><span style="color: #64748b; font-size: 13px;">Vui lòng kiểm tra lại danh sách hoặc nhập một Mã KH khác.</span>`;
         notificationModal.style.display = 'flex';
         return;
     } else {
@@ -2187,7 +2213,7 @@ document.getElementById('btnDeleteCustomer')?.addEventListener('click', () => {
     closeEditCustomerInfoModal();
     if (currentActionCustomerId) {
         customerToDelete = currentActionCustomerId;
-        if (deleteModalMessage) deleteModalMessage.innerHTML = `Bạn có chắc chắn muốn xóa khách hàng <strong>"${currentActionCustomerId}"</strong> không?`;
+        if (deleteModalMessage) deleteModalMessage.innerHTML = `Bạn có chắc chắn muốn xóa khách hàng <strong>"${escapeHtml(currentActionCustomerId)}"</strong> không?`;
         if (deleteModal) deleteModal.style.display = 'flex';
     }
 });
@@ -2234,7 +2260,7 @@ document.getElementById('editCustomerInfoForm')?.addEventListener('submit', asyn
         if (notificationTitle && notificationMessage && notificationModal) {
             notificationTitle.innerText = 'Thành công!';
             notificationTitle.style.color = '#10b981';
-            notificationMessage.innerHTML = `Hồ sơ thông tin của khách hàng <strong>${customer.customerId}</strong> đã được cập nhật thành công!`;
+            notificationMessage.innerHTML = `Hồ sơ thông tin của khách hàng <strong>${escapeHtml(customer.customerId)}</strong> đã được cập nhật thành công!`;
             notificationModal.style.display = 'flex';
         }
     }
@@ -2319,7 +2345,7 @@ document.getElementById('updateSalesForm')?.addEventListener('submit', async fun
         if (notificationTitle && notificationMessage && notificationModal) {
             notificationTitle.innerText = 'Thành công!';
             notificationTitle.style.color = titleColor;
-            notificationMessage.innerHTML = `Doanh số của khách hàng <strong>${customer.customerId}</strong> đã được <br><strong style="color: ${titleColor}; font-size: 18px;">${actionText}</strong>`;
+            notificationMessage.innerHTML = `Doanh số của khách hàng <strong>${escapeHtml(customer.customerId)}</strong> đã được <br><strong style="color: ${titleColor}; font-size: 18px;">${actionText}</strong>`;
             notificationModal.style.display = 'flex';
         }
     }
@@ -2746,7 +2772,7 @@ function showRevenueReport() {
     if (reportTableBody) {
         reportTableBody.innerHTML = '';
         if (transactionsInPeriod.length === 0) {
-            reportTableBody.innerHTML = `<tr><td colspan="5" style="text-align: center; padding: 30px; color: #64748b;">Không có giao dịch/biến động doanh thu nào phát sinh trong <strong>${period.label}</strong>.</td></tr>`;
+            reportTableBody.innerHTML = `<tr><td colspan="5" style="text-align: center; padding: 30px; color: #64748b;">Không có giao dịch/biến động doanh thu nào phát sinh trong <strong>${escapeHtml(period.label)}</strong>.</td></tr>`;
             const reportTotalEl = document.getElementById('reportTotalRevenue');
             if (reportTotalEl) {
                 reportTotalEl.innerText = "0 đ";
@@ -2759,9 +2785,12 @@ function showRevenueReport() {
                 const shortDate = item.date.toLocaleDateString('vi-VN', { day: '2-digit', month: '2-digit', year: '2-digit' });
                 const shortTime = item.date.toLocaleTimeString('vi-VN', { hour: '2-digit', minute: '2-digit' });
                 const formattedTime = `${shortDate} ${shortTime}`;
+                const reportCustomerId = escapeHtml(c.customerId || '');
+                const reportCompanyName = escapeHtml(c.companyName || '');
+                const reportNote = escapeHtml(tx.note || '');
                 totalRevenuePeriod += Number(tx.amount || 0);
                 const tr = document.createElement('tr');
-                tr.innerHTML = `<td style="padding: 12px 8px; border-bottom: 1px solid #e2e8f0; font-size: 12.5px; text-align: center; white-space: nowrap;">${formattedTime}</td><td style="padding: 12px 14px; border-bottom: 1px solid #e2e8f0; font-weight: bold; color: var(--primary-color); white-space: nowrap; overflow: hidden; text-overflow: ellipsis;" class="customer-id-cell" title="${c.customerId || ''}">${c.customerId || '-'}</td><td style="padding: 12px 14px; border-bottom: 1px solid #e2e8f0;">${c.companyName || '-'}</td><td style="padding: 12px 14px; border-bottom: 1px solid #e2e8f0; text-align: right; white-space: nowrap;">${formatSalesScaledByMagnitude(tx.amount)}</td><td style="padding: 12px 14px; border-bottom: 1px solid #e2e8f0; font-size: 13px;">${tx.note || '-'}</td>`;
+                tr.innerHTML = `<td style="padding: 12px 8px; border-bottom: 1px solid #e2e8f0; font-size: 12.5px; text-align: center; white-space: nowrap;">${escapeHtml(formattedTime)}</td><td style="padding: 12px 14px; border-bottom: 1px solid #e2e8f0; font-weight: bold; color: var(--primary-color); white-space: nowrap; overflow: hidden; text-overflow: ellipsis;" class="customer-id-cell" title="${reportCustomerId}">${reportCustomerId || '-'}</td><td style="padding: 12px 14px; border-bottom: 1px solid #e2e8f0;">${reportCompanyName || '-'}</td><td style="padding: 12px 14px; border-bottom: 1px solid #e2e8f0; text-align: right; white-space: nowrap;">${formatSalesScaledByMagnitude(tx.amount)}</td><td style="padding: 12px 14px; border-bottom: 1px solid #e2e8f0; font-size: 13px;">${reportNote || '-'}</td>`;
                 reportTableBody.appendChild(tr);
             });
             const reportTotalEl = document.getElementById('reportTotalRevenue');
@@ -3029,7 +3058,7 @@ function renderActivityHistory() {
 
     listEl.innerHTML = '';
     if (pageGroups.length === 0) {
-        listEl.innerHTML = `<div style="text-align: center; color: var(--text-muted); padding: 40px 20px; background: #fff; border: 1px solid #e2e8f0; border-radius: 10px;">Không có thao tác nào trong <strong>${period.label}</strong> với bộ lọc hiện tại.</div>`;
+        listEl.innerHTML = `<div style="text-align: center; color: var(--text-muted); padding: 40px 20px; background: #fff; border: 1px solid #e2e8f0; border-radius: 10px;">Không có thao tác nào trong <strong>${escapeHtml(period.label)}</strong> với bộ lọc hiện tại.</div>`;
     } else {
         const timeline = document.createElement('div');
         timeline.style.cssText = 'position: relative; padding-left: 24px; border-left: 2px solid #e2e8f0; margin-left: 12px; display: flex; flex-direction: column; gap: 16px;';
@@ -3040,6 +3069,10 @@ function renderActivityHistory() {
             const mainType = classifyActivityItem(group.items[0]);
             const timeText = group.date.toLocaleString('vi-VN', { day: '2-digit', month: '2-digit', year: 'numeric', hour: '2-digit', minute: '2-digit' });
             const user = (group.items[0] && group.items[0].updated_by) || 'hệ thống';
+            const activityCustomerId = escapeHtml(c.customerId || '');
+            const activityCompanyName = escapeHtml(c.companyName || '');
+            const activityTime = escapeHtml(timeText);
+            const activityUser = escapeHtml(user);
 
             const card = document.createElement('div');
             card.style.cssText = 'position: relative; background: #fff; border: 1px solid #e2e8f0; border-radius: 10px; padding: 12px 14px;';
@@ -3052,8 +3085,8 @@ function renderActivityHistory() {
                 detailHtml += `<ol style="margin: 8px 0 0 16px; padding-left: 12px; color: #475569; font-size: 13px;">`;
                 group.items.forEach((it, idx) => {
                     const parts = [];
-                    if (it.category) parts.push(`<strong style="color: var(--primary-color);">${it.category}</strong>`);
-                    if (it.productDesc) parts.push(`${it.productDesc}`);
+                    if (it.category) parts.push(`<strong style="color: var(--primary-color);">${escapeHtml(it.category)}</strong>`);
+                    if (it.productDesc) parts.push(`${escapeHtml(it.productDesc)}`);
                     const name = parts.length > 0 ? parts.join(' - ') : `Sản phẩm ${idx + 1}`;
                     const prefix = (it.amount || 0) > 0 ? '+' : '';
                     detailHtml += `<li>${name}: <strong style="color: ${(it.amount || 0) >= 0 ? '#10b981' : '#ef4444'}">${prefix}${formatCurrency(it.amount || 0)}</strong></li>`;
@@ -3062,24 +3095,24 @@ function renderActivityHistory() {
             } else {
                 const it = group.items[0] || {};
                 const parts = [];
-                if (it.category) parts.push(`<strong style="color: var(--primary-color);">${it.category}</strong>`);
-                if (it.productDesc) parts.push(`${it.productDesc}`);
+                if (it.category) parts.push(`<strong style="color: var(--primary-color);">${escapeHtml(it.category)}</strong>`);
+                if (it.productDesc) parts.push(`${escapeHtml(it.productDesc)}`);
                 const singleName = parts.length > 0 ? parts.join(' - ') : '-';
                 const prefix = (it.amount || 0) > 0 ? '+' : '';
                 detailHtml += `<div style="font-size: 13px; color: #475569; margin-top: 6px;">${singleName} • <strong style="color: ${(it.amount || 0) >= 0 ? '#10b981' : '#ef4444'}">${prefix}${formatCurrency(it.amount || 0)}</strong></div>`;
-                if (it.note) detailHtml += `<div style="font-size: 12px; color: var(--text-muted); margin-top: 4px;">${it.note}</div>`;
+                if (it.note) detailHtml += `<div style="font-size: 12px; color: var(--text-muted); margin-top: 4px;">${escapeHtml(it.note)}</div>`;
             }
             const batchNote = isBatch ? String((group.items[0] && (group.items[0].batchNote || '')) || '') : '';
             const title = isBatch ? `Nhập ${group.items.length} sản phẩm cùng đợt` : mainType.label;
 
             card.innerHTML += `
-                <div style="font-size: 12px; color: var(--text-muted); font-weight: 700;">${timeText}</div>
+                <div style="font-size: 12px; color: var(--text-muted); font-weight: 700;">${activityTime}</div>
                 <div style="font-size: 14px; font-weight: 800; color: var(--text-main); margin-top: 2px;">
-                    <span class="customer-id-cell" style="color: var(--primary-color); cursor: pointer;" data-activity-customer="${c.customerId || ''}">${c.customerId || '-'}</span>
-                    <span style="font-weight: 500; color: var(--text-muted);"> ${c.companyName ? `(${c.companyName})` : ''}</span>
+                    <span class="customer-id-cell" style="color: var(--primary-color); cursor: pointer;" data-activity-customer="${activityCustomerId}">${activityCustomerId || '-'}</span>
+                    <span style="font-weight: 500; color: var(--text-muted);"> ${activityCompanyName ? `(${activityCompanyName})` : ''}</span>
                 </div>
                 <div style="margin-top: 6px; display: inline-block; padding: 2px 10px; font-size: 11px; font-weight: 800; border-radius: 20px; color: ${mainType.color}; background: #f8fafc; border: 1px solid #e2e8f0;">${title}</div>
-                <div style="font-size: 12px; color: var(--text-muted); margin-top: 6px;">Người làm: <strong>${user}</strong> • Tổng đợt: <strong style="color: ${total >= 0 ? '#10b981' : '#ef4444'}">${total > 0 ? '+' : ''}${formatCurrency(total)}</strong>${batchNote ? ` • Ghi chú: ${batchNote}` : ''}</div>
+                <div style="font-size: 12px; color: var(--text-muted); margin-top: 6px;">Người làm: <strong>${activityUser}</strong> • Tổng đợt: <strong style="color: ${total >= 0 ? '#10b981' : '#ef4444'}">${total > 0 ? '+' : ''}${formatCurrency(total)}</strong>${batchNote ? ` • Ghi chú: ${escapeHtml(batchNote)}` : ''}</div>
                 ${detailHtml}
             `;
             timeline.appendChild(card);
@@ -3326,7 +3359,7 @@ function renderDashboard() {
     if (topCustEl) {
         topCustEl.innerHTML = topCustomers.length === 0 ? `<div style="color: #94a3b8;">Chưa có giao dịch trong kỳ.</div>` : topCustomers.map((it, idx) => `
             <div class="dash-row-item">
-                <span><strong style="color: #94a3b8;">#${idx + 1}</strong> <strong style="color: var(--primary-color);">${it.customerId}</strong> <span style="color: var(--text-muted);">${it.companyName || ''}</span></span>
+                <span><strong style="color: #94a3b8;">#${idx + 1}</strong> <strong style="color: var(--primary-color);">${escapeHtml(it.customerId)}</strong> <span style="color: var(--text-muted);">${escapeHtml(it.companyName || '')}</span></span>
                 <strong style="color: #059669; white-space: nowrap;">${formatCurrency(it.amount)}</strong>
             </div>
         `).join('');
@@ -3335,7 +3368,7 @@ function renderDashboard() {
     if (topProdEl) {
         topProdEl.innerHTML = topProducts.length === 0 ? `<div style="color: #94a3b8;">Chưa có sản phẩm trong kỳ.</div>` : topProducts.map((it, idx) => `
             <div class="dash-row-item">
-                <span><strong style="color: #94a3b8;">#${idx + 1}</strong> <strong style="color: var(--text-main);">${it.name}</strong> <span style="color: var(--text-muted);">(${it.count} lượt)</span></span>
+                <span><strong style="color: #94a3b8;">#${idx + 1}</strong> <strong style="color: var(--text-main);">${escapeHtml(it.name)}</strong> <span style="color: var(--text-muted);">(${it.count} lượt)</span></span>
                 <strong style="color: #059669; white-space: nowrap;">${formatCurrency(it.revenue)}</strong>
             </div>
         `).join('');
@@ -3356,7 +3389,7 @@ function renderDashboard() {
         recentEl.innerHTML = latest.length === 0 ? `<div style="color: #94a3b8;">Chưa có hoạt động.</div>` : latest.map(entry => {
             const prefix = (entry.tx.amount || 0) > 0 ? '+' : '';
             return `<div class="dash-row-item">
-                <span><span style="color: var(--text-muted);">${entry.date.toLocaleString('vi-VN', { day: '2-digit', month: '2-digit', hour: '2-digit', minute: '2-digit' })}</span> • <strong style="color: var(--primary-color);">${entry.c.customerId}</strong> <span style="color: var(--text-muted);">${entry.tx.note || ''}</span></span>
+                <span><span style="color: var(--text-muted);">${escapeHtml(entry.date.toLocaleString('vi-VN', { day: '2-digit', month: '2-digit', hour: '2-digit', minute: '2-digit' }))}</span> • <strong style="color: var(--primary-color);">${escapeHtml(entry.c.customerId)}</strong> <span style="color: var(--text-muted);">${escapeHtml(entry.tx.note || '')}</span></span>
                 <strong style="color: ${(entry.tx.amount || 0) >= 0 ? '#10b981' : '#ef4444'}; white-space: nowrap;">${prefix}${formatCurrency(entry.tx.amount || 0)}</strong>
             </div>`;
         }).join('');
@@ -3661,13 +3694,13 @@ function showAnalysisModal() {
     const analysisDetailTitle = document.getElementById('analysisDetailTitle');
     if (analysisDetailTitle) analysisDetailTitle.innerText = `Chi Tiết Khách Hàng Phát Sinh Doanh Số Trong ${period.label}`;
     if (activeCustomersList.length === 0) {
-        analysisTableBody.innerHTML = `<tr><td colspan="2" class="text-center" style="color: var(--text-muted); padding: 15px;">Không có dữ liệu giao dịch trong ${period.label}.</td></tr>`;
+        analysisTableBody.innerHTML = `<tr><td colspan="2" class="text-center" style="color: var(--text-muted); padding: 15px;">Không có dữ liệu giao dịch trong ${escapeHtml(period.label)}.</td></tr>`;
     } else {
         activeCustomersList.forEach(item => {
             const tr = document.createElement('tr');
             tr.style.borderBottom = '1px solid #e2e8f0';
             tr.innerHTML = `
-                <td style="width: 75% !important; max-width: 75% !important; padding: 10px 8px; font-weight: bold; color: var(--primary-color); text-align: left; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;" class="customer-id-cell">${item.customerId}</td>
+                <td style="width: 75% !important; max-width: 75% !important; padding: 10px 8px; font-weight: bold; color: var(--primary-color); text-align: left; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;" class="customer-id-cell">${escapeHtml(item.customerId)}</td>
                 <td style="width: 25% !important; max-width: 25% !important; padding: 10px 8px; text-align: right; white-space: nowrap;">${formatSalesScaledByMagnitude(item.amount)}</td>
             `;
             analysisTableBody.appendChild(tr);
@@ -3768,7 +3801,7 @@ function showProductAnalysisModal() {
         const tr = document.createElement('tr');
         tr.style.borderBottom = '1px solid #e2e8f0';
         tr.innerHTML = `
-            <td style="width: 45%; padding: 8px 6px; font-weight: 600; color: var(--primary-color); font-size: 13px; overflow: hidden; text-overflow: ellipsis;" title="${product.name}">${product.name}</td>
+            <td style="width: 45%; padding: 8px 6px; font-weight: 600; color: var(--primary-color); font-size: 13px; overflow: hidden; text-overflow: ellipsis;" title="${escapeHtml(product.name)}">${escapeHtml(product.name)}</td>
             <td style="width: 20%; padding: 8px 6px; text-align: center; font-weight: 600; font-size: 13px;">${product.count}</td>
             <td style="width: 35%; padding: 8px 6px; text-align: right; font-weight: bold; color: #10b981; font-size: 13px; white-space: nowrap;">${formatCurrency(product.revenue)}</td>
         `;
@@ -3833,7 +3866,7 @@ function showProductAnalysisModal() {
                 const tr = document.createElement('tr');
                 tr.style.borderBottom = '1px solid #e2e8f0';
                 tr.innerHTML = `
-                    <td style="padding: 8px 4px; font-weight: 600; color: var(--primary-color); font-size: 13px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;" title="${item.name}">${item.name}</td>
+                    <td style="padding: 8px 4px; font-weight: 600; color: var(--primary-color); font-size: 13px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;" title="${escapeHtml(item.name)}">${escapeHtml(item.name)}</td>
                     <td style="padding: 8px 4px; text-align: center; font-size: 13px;">${item.prevCount}</td>
                     <td style="padding: 8px 4px; text-align: center; font-weight: bold; font-size: 13px;">${item.currCount}</td>
                     <td style="padding: 8px 4px; text-align: center; font-weight: 600; font-size: 13px; color: ${item.diff > 0 ? '#16a34a' : (item.diff < 0 ? '#dc2626' : '#475569')};">${item.diffText}</td>
