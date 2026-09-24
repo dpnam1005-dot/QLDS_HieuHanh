@@ -237,10 +237,6 @@ function initAuthListener() {
     }
 }
 
-// TỰ ĐỘNG KÍCH HOẠT LISTENER AUTH KHI SCRIPT TẢI
-initAuthListener();
-
-
 function mapFromSupabase(row) {
     let parsedHistory = [];
     if (typeof row.history === 'string') {
@@ -306,6 +302,12 @@ function mapToSupabase(c) {
         updated_by: currentUserEmail ? currentUserEmail.split('@')[0] : 'hệ thống',
         history: Array.isArray(c.history) ? c.history : []
     };
+}
+
+// Build a draft so failed saves never leave the in-memory customer partially changed.
+function cloneCustomerData(customer) {
+    if (typeof structuredClone === 'function') return structuredClone(customer);
+    return JSON.parse(JSON.stringify(customer));
 }
 
 // ========== KPI FUNCTIONS ==========
@@ -865,9 +867,13 @@ async function fetchCustomers() {
     } catch (e) {
         console.error("Lỗi hệ thống:", e);
         await hideLoadingBar(); // Ẩn loading bar khi có lỗi (có await)
-        tableBody.innerHTML = `<tr><td colspan="8" class="text-center" style="color: #ef4444; padding: 30px; line-height: 1.6;">
-            <b>Lỗi kết nối mạng:</b> ${e.message}
-        </td></tr>`;
+        if (!hasCache && tableBody) {
+            tableBody.innerHTML = `<tr><td colspan="8" class="text-center" style="color: #ef4444; padding: 30px; line-height: 1.6;">
+                <b>Lỗi kết nối mạng:</b> ${e.message}
+            </td></tr>`;
+        } else if (hasCache) {
+            console.warn("Không thể đồng bộ dữ liệu mới; đang giữ dữ liệu cache hiện tại.", e);
+        }
     }
 }
 
@@ -1351,21 +1357,27 @@ async function saveEditHistoryTx() {
         };
     });
 
+    const draft = cloneCustomerData(customer);
     const keepIdx = new Set(editHistoryTxState.indices);
-    const keptHistory = customer.history.filter((tx, idx) => !keepIdx.has(idx));
+    const keptHistory = draft.history.filter((tx, idx) => !keepIdx.has(idx));
     newEntries.forEach(entry => keptHistory.push(entry));
-    customer.history = keptHistory;
-    const historySum = customer.history.reduce((sum, tx) => sum + (Number(tx.amount) || 0), 0);
-    customer.sales = historySum;
-    customer.lastUpdated = new Date().toISOString();
+    draft.history = keptHistory;
+    const historySum = draft.history.reduce((sum, tx) => sum + (Number(tx.amount) || 0), 0);
+    draft.sales = historySum;
+    draft.lastUpdated = new Date().toISOString();
     const summary = summarizeBatchForTopLevel(filled);
-    if (summary.category) customer.category = summary.category;
-    if (summary.productDesc) customer.productDesc = summary.productDesc;
+    if (summary.category) draft.category = summary.category;
+    if (summary.productDesc) draft.productDesc = summary.productDesc;
 
     const saveBtn = document.getElementById('btnSaveEditHistoryTx');
     if (saveBtn) { saveBtn.innerText = 'Đang lưu...'; saveBtn.disabled = true; }
-    const payload = mapToSupabase(customer);
-    const { error } = await supabaseClient.from('Quan ly ban hang').update(payload).eq('customer_id', customer.customerId);
+    let error = null;
+    try {
+        const payload = mapToSupabase(draft);
+        ({ error } = await supabaseClient.from('Quan ly ban hang').update(payload).eq('customer_id', customer.customerId));
+    } catch (err) {
+        error = err;
+    }
     if (saveBtn) { saveBtn.innerText = 'Lưu chia lại'; saveBtn.disabled = false; }
     if (error) {
         alert('Lỗi khi lưu chia lại: ' + error.message);
@@ -1881,6 +1893,7 @@ async function proceedWithSave(data, isUpdating) {
         notificationModal.style.display = 'flex';
         return;
     } else {
+        let saveError = null;
         if (!isUpdating) {
             const actionBy = currentUserEmail ? currentUserEmail.split('@')[0] : 'hệ thống';
             if (Array.isArray(data._batchItems) && data._batchItems.length > 0) {
@@ -1893,13 +1906,25 @@ async function proceedWithSave(data, isUpdating) {
                 data.history = [{ date: data.lastUpdated, amount: data.sales, note: 'Tạo mới', category: data.category || '', productDesc: data.productDesc || '', updated_by: actionBy }];
             }
             delete data._batchItems;
-            const payload = mapToSupabase(data);
-            const { error } = await supabaseClient.from('Quan ly ban hang').insert([payload]);
-            if (error) alert("Lỗi khi thêm mới dữ liệu: " + error.message);
+            try {
+                const payload = mapToSupabase(data);
+                ({ error: saveError } = await supabaseClient.from('Quan ly ban hang').insert([payload]));
+            } catch (err) {
+                saveError = err;
+            }
         } else {
-            const payload = mapToSupabase(data);
-            const { error } = await supabaseClient.from('Quan ly ban hang').update(payload).eq('customer_id', data.customerId);
-            if (error) alert("Lỗi khi cập nhật dữ liệu: " + error.message);
+            try {
+                const payload = mapToSupabase(data);
+                ({ error: saveError } = await supabaseClient.from('Quan ly ban hang').update(payload).eq('customer_id', data.customerId));
+            } catch (err) {
+                saveError = err;
+            }
+        }
+
+        if (saveError) {
+            alert((isUpdating ? "Lỗi khi cập nhật dữ liệu: " : "Lỗi khi thêm mới dữ liệu: ") + saveError.message);
+            if (btnSubmit) { btnSubmit.innerText = 'Lưu Khách Hàng'; btnSubmit.disabled = false; }
+            return;
         }
     }
 
@@ -2173,23 +2198,29 @@ document.getElementById('editCustomerInfoForm')?.addEventListener('submit', asyn
     const customer = customers.find(c => String(c.customerId).toLowerCase() === String(currentActionCustomerId).toLowerCase());
     if (!customer) return;
 
-    customer.taxId = document.getElementById('editTaxId')?.value.trim() || '';
-    customer.companyName = document.getElementById('editCompanyName')?.value.trim() || '';
-    customer.classification = document.getElementById('editClassification')?.value || '';
+    const draft = cloneCustomerData(customer);
+    draft.taxId = document.getElementById('editTaxId')?.value.trim() || '';
+    draft.companyName = document.getElementById('editCompanyName')?.value.trim() || '';
+    draft.classification = document.getElementById('editClassification')?.value || '';
     const editCategoryEl = document.getElementById('editCategory');
     const editProductDescEl = document.getElementById('editProductDesc');
-    if (editCategoryEl) customer.category = editCategoryEl.value || '';
-    if (editProductDescEl) customer.productDesc = editProductDescEl.value.trim() || '';
-    customer.contactName = document.getElementById('editContactName')?.value.trim() || '';
-    customer.phone = document.getElementById('editPhone')?.value.trim() || '';
-    customer.notes = document.getElementById('editNotes')?.value.trim() || '';
-    customer.lastUpdated = new Date().toISOString();
+    if (editCategoryEl) draft.category = editCategoryEl.value || '';
+    if (editProductDescEl) draft.productDesc = editProductDescEl.value.trim() || '';
+    draft.contactName = document.getElementById('editContactName')?.value.trim() || '';
+    draft.phone = document.getElementById('editPhone')?.value.trim() || '';
+    draft.notes = document.getElementById('editNotes')?.value.trim() || '';
+    draft.lastUpdated = new Date().toISOString();
 
     const saveBtn = document.getElementById('btnSaveEditInfo');
     if (saveBtn) { saveBtn.innerText = 'Đang lưu...'; saveBtn.disabled = true; }
 
-    const payload = mapToSupabase(customer);
-    const { error } = await supabaseClient.from('Quan ly ban hang').update(payload).eq('customer_id', customer.customerId);
+    let error = null;
+    try {
+        const payload = mapToSupabase(draft);
+        ({ error } = await supabaseClient.from('Quan ly ban hang').update(payload).eq('customer_id', customer.customerId));
+    } catch (err) {
+        error = err;
+    }
 
     if (saveBtn) { saveBtn.innerText = 'Cập nhật Hồ sơ'; saveBtn.disabled = false; }
 
@@ -2250,19 +2281,25 @@ document.getElementById('updateSalesForm')?.addEventListener('submit', async fun
     const batchEntries = buildBatchHistoryEntries(itemsToSave, batchDate, txNoteVal, actionBy);
     const addedSales = itemsToSave.reduce((sum, it) => sum + (it.amount || 0), 0);
 
-    customer.sales = (customer.sales || 0) + addedSales;
-    if (!Array.isArray(customer.history)) customer.history = [];
-    batchEntries.forEach(entry => customer.history.push(entry));
-    customer.lastUpdated = batchDate;
+    const draft = cloneCustomerData(customer);
+    draft.sales = (draft.sales || 0) + addedSales;
+    if (!Array.isArray(draft.history)) draft.history = [];
+    batchEntries.forEach(entry => draft.history.push(entry));
+    draft.lastUpdated = batchDate;
     const batchSummary = summarizeBatchForTopLevel(itemsToSave);
-    if (batchSummary.category) customer.category = batchSummary.category;
-    if (batchSummary.productDesc) customer.productDesc = batchSummary.productDesc;
+    if (batchSummary.category) draft.category = batchSummary.category;
+    if (batchSummary.productDesc) draft.productDesc = batchSummary.productDesc;
 
     const saveBtn = document.getElementById('btnSaveUpdateSales');
     if (saveBtn) { saveBtn.innerText = 'Đang lưu...'; saveBtn.disabled = true; }
 
-    const payload = mapToSupabase(customer);
-    const { error } = await supabaseClient.from('Quan ly ban hang').update(payload).eq('customer_id', customer.customerId);
+    let error = null;
+    try {
+        const payload = mapToSupabase(draft);
+        ({ error } = await supabaseClient.from('Quan ly ban hang').update(payload).eq('customer_id', customer.customerId));
+    } catch (err) {
+        error = err;
+    }
 
     if (saveBtn) { saveBtn.innerText = 'Lưu Doanh Số & Sản Phẩm'; saveBtn.disabled = false; }
 
