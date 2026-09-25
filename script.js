@@ -1038,6 +1038,13 @@ function parseMoneyInputValue(raw) {
     return isNaN(n) ? null : n;
 }
 
+function parseQuantityInputValue(raw) {
+    const s = String(raw ?? '').trim();
+    if (s === '') return 1;
+    const n = Number(s);
+    return Number.isInteger(n) && n > 0 ? n : null;
+}
+
 function formatMoneyInputValue(input) {
     if (!input) return;
     let isNegative = input.value.startsWith('-');
@@ -1059,10 +1066,10 @@ function buildSalesItemRow(listType, item) {
     row.style.cssText = 'border: 1px solid var(--border-color); border-radius: 10px; padding: 10px; background: #FFFFFF; display: flex; flex-direction: column; gap: 8px;';
 
     const topRow = document.createElement('div');
-    topRow.style.cssText = 'display: flex; gap: 8px; align-items: flex-end;';
+    topRow.style.cssText = 'display: flex; gap: 8px; align-items: flex-end; flex-wrap: wrap;';
 
     const amountWrap = document.createElement('div');
-    amountWrap.style.flex = '1';
+    amountWrap.style.flex = '1 1 260px';
     const amountLabel = document.createElement('label');
     amountLabel.style.cssText = 'display: block; font-size: 12px; font-weight: 700; color: #2C2825; margin-bottom: 4px;';
     amountLabel.textContent = 'Số tiền (VNĐ) *';
@@ -1074,6 +1081,23 @@ function buildSalesItemRow(listType, item) {
     amountWrap.appendChild(amountLabel);
     amountWrap.appendChild(amountInput);
 
+    const quantityWrap = document.createElement('div');
+    quantityWrap.style.cssText = 'flex: 0 0 110px;';
+    const quantityLabel = document.createElement('label');
+    quantityLabel.style.cssText = 'display: block; font-size: 12px; font-weight: 700; color: #2C2825; margin-bottom: 4px;';
+    quantityLabel.textContent = 'Số lượng';
+    const quantityInput = document.createElement('input');
+    quantityInput.type = 'number';
+    quantityInput.min = '1';
+    quantityInput.step = '1';
+    quantityInput.inputMode = 'numeric';
+    quantityInput.className = 'form-control-custom sales-item-quantity';
+    quantityInput.placeholder = '1';
+    const initialQuantity = Number(item && item.quantity);
+    quantityInput.value = Number.isInteger(initialQuantity) && initialQuantity > 0 ? initialQuantity : 1;
+    quantityWrap.appendChild(quantityLabel);
+    quantityWrap.appendChild(quantityInput);
+
     const removeBtn = document.createElement('button');
     removeBtn.type = 'button';
     removeBtn.className = 'btn-cancel-sales sales-item-remove';
@@ -1082,6 +1106,7 @@ function buildSalesItemRow(listType, item) {
     removeBtn.textContent = 'Xóa';
 
     topRow.appendChild(amountWrap);
+    topRow.appendChild(quantityWrap);
     topRow.appendChild(removeBtn);
 
     const midRow = document.createElement('div');
@@ -1133,6 +1158,7 @@ function buildSalesItemRow(listType, item) {
         const rows = list ? list.querySelectorAll('.sales-item-row') : [];
         if (rows.length <= 1) {
             amountInput.value = '';
+            quantityInput.value = '1';
             nameInput.value = '';
             descInput.value = '';
             formatMoneyInputValue(amountInput);
@@ -1155,11 +1181,13 @@ function getSalesItemRows(listId) {
 function collectSalesItems(listId) {
     return getSalesItemRows(listId).map(row => {
         const amountInput = row.querySelector('.sales-item-amount');
+        const quantityInput = row.querySelector('.sales-item-quantity');
         const nameInput = row.querySelector('.sales-item-name');
         const descInput = row.querySelector('.sales-item-desc');
         return {
             row,
             amount: parseMoneyInputValue(amountInput ? amountInput.value : ''),
+            quantity: parseQuantityInputValue(quantityInput ? quantityInput.value : ''),
             category: nameInput ? nameInput.value.trim() : '',
             productDesc: descInput ? descInput.value.trim() : ''
         };
@@ -1210,6 +1238,10 @@ function validateSalesItems(items, listId) {
     if (invalidRow) {
         return { ok: false, message: 'Có dòng số tiền chưa hợp lệ (trống hoặc bằng 0). Vui lòng kiểm tra lại!' };
     }
+    const invalidQuantityRow = items.find(it => it.quantity === null);
+    if (invalidQuantityRow) {
+        return { ok: false, message: 'Số lượng sản phẩm phải là số nguyên lớn hơn 0.' };
+    }
     void listId;
     return { ok: true, items: filled };
 }
@@ -1230,6 +1262,7 @@ function buildBatchHistoryEntries(items, batchDate, batchNote, actionBy) {
         return {
             date: batchDate,
             amount: it.amount,
+            quantity: it.quantity || 1,
             note,
             batchNote: batchNote || '',
             category: it.category || '',
@@ -1262,12 +1295,14 @@ function getEditHistoryTxItems() {
     if (!list) return [];
     return Array.from(list.querySelectorAll('.sales-item-row')).map(row => {
         const amountInput = row.querySelector('.sales-item-amount');
+        const quantityInput = row.querySelector('.sales-item-quantity');
         const nameInput = row.querySelector('.sales-item-name');
         const descInput = row.querySelector('.sales-item-desc');
         return {
             row,
             amountInput,
             amount: parseMoneyInputValue(amountInput ? amountInput.value : ''),
+            quantity: parseQuantityInputValue(quantityInput ? quantityInput.value : ''),
             category: nameInput ? nameInput.value.trim() : '',
             productDesc: descInput ? descInput.value.trim() : ''
         };
@@ -1324,7 +1359,7 @@ function openEditHistoryTx(customerId, batchId, singleIndex) {
     if (list) {
         list.innerHTML = '';
         entries.forEach(tx => {
-            const row = buildSalesItemRow('edithistory', { amount: tx.amount, category: tx.category || '', productDesc: tx.productDesc || '' });
+            const row = buildSalesItemRow('edithistory', { amount: tx.amount, quantity: tx.quantity, category: tx.category || '', productDesc: tx.productDesc || '' });
             const amt = row.querySelector('.sales-item-amount');
             if (amt) amt.addEventListener('input', updateEditHistoryTxTotal);
             list.appendChild(row);
@@ -1358,6 +1393,10 @@ async function saveEditHistoryTx() {
         alert('Có dòng số tiền chưa hợp lệ. Vui lòng kiểm tra lại!');
         return;
     }
+    if (items.some(it => it.quantity === null)) {
+        alert('Số lượng sản phẩm phải là số nguyên lớn hơn 0.');
+        return;
+    }
     if (items.some(it => (it.category || it.productDesc) && (it.amount === null || it.amount === 0))) {
         alert('Có sản phẩm đã nhập tên/mô tả nhưng chưa nhập số tiền. Vui lòng nhập số tiền hoặc xóa dòng đó!');
         return;
@@ -1380,6 +1419,7 @@ async function saveEditHistoryTx() {
         return {
             date: editHistoryTxState.keepDate,
             amount: it.amount,
+            quantity: it.quantity || 1,
             note,
             batchNote: baseNote || '',
             category: it.category || '',
@@ -1659,7 +1699,8 @@ function showHistoryModal(customerId) {
                     if (it.productDesc) itemParts.push(`${escapeHtml(it.productDesc)}`);
                     const itemName = itemParts.length > 0 ? itemParts.join(' - ') : `Sản phẩm ${idx + 1}`;
                     const amtPrefix = (it.amount || 0) > 0 ? '+' : '';
-                    detailsHtml += `<li>${itemName}: <strong style="color: ${(it.amount || 0) >= 0 ? '#10b981' : '#ef4444'}">${amtPrefix}${formatCurrency(it.amount || 0)}</strong></li>`;
+                    const quantity = Number.isInteger(Number(it.quantity)) && Number(it.quantity) > 0 ? Number(it.quantity) : 1;
+                    detailsHtml += `<li>${itemName} (${quantity} SP): <strong style="color: ${(it.amount || 0) >= 0 ? '#10b981' : '#ef4444'}">${amtPrefix}${formatCurrency(it.amount || 0)}</strong></li>`;
                 });
                 detailsHtml += `</ol><ul style="margin: 8px 0 0 0; padding-left: 15px; list-style-type: disc; color: #475569; font-size: 13px;">`;
                 const batchNote = (groupItems[0] && (groupItems[0].batchNote || '')) || '';
@@ -1671,6 +1712,8 @@ function showHistoryModal(customerId) {
                     const amountPrefix = item.amount > 0 ? '+' : '';
                     detailsHtml += `<li>Biến động doanh số: <strong style="color: ${item.amount > 0 ? '#10b981' : '#ef4444'}">${amountPrefix}${formatCurrency(item.amount)}</strong></li>`;
                 }
+                const quantity = Number.isInteger(Number(item.quantity)) && Number(item.quantity) > 0 ? Number(item.quantity) : 1;
+                detailsHtml += `<li>Số lượng: <strong>${quantity} sản phẩm</strong></li>`;
                 const finalCategory = item.category || customer.category || '';
                 const finalProductDesc = item.productDesc || customer.productDesc || '';
 
@@ -1941,7 +1984,7 @@ async function proceedWithSave(data, isUpdating) {
                 data.category = summary.category || data.category || '';
                 data.productDesc = summary.productDesc || data.productDesc || '';
             } else {
-                data.history = [{ date: data.lastUpdated, amount: data.sales, note: 'Tạo mới', category: data.category || '', productDesc: data.productDesc || '', updated_by: actionBy }];
+                data.history = [{ date: data.lastUpdated, amount: data.sales, quantity: 1, note: 'Tạo mới', category: data.category || '', productDesc: data.productDesc || '', updated_by: actionBy }];
             }
             delete data._batchItems;
             try {
@@ -2311,7 +2354,7 @@ document.getElementById('updateSalesForm')?.addEventListener('submit', async fun
         }
         const categoryVal = document.getElementById('salesCategorySelect')?.value || '';
         const productDescVal = document.getElementById('salesProductDescInput')?.value.trim() || '';
-        itemsToSave = [{ amount: addedSales, category: categoryVal, productDesc: productDescVal }];
+        itemsToSave = [{ amount: addedSales, quantity: 1, category: categoryVal, productDesc: productDescVal }];
     }
 
     const batchDate = new Date().toISOString();
@@ -3508,6 +3551,12 @@ document.addEventListener('click', (e) => {
     showCustomerActionModal(custEl.dataset.dashboardCustomer);
 }, true);
 
+function isPositiveSaleTransaction(tx) {
+    const amount = Number(tx && tx.amount);
+    const date = tx && tx.date ? new Date(tx.date) : null;
+    return Number.isFinite(amount) && amount > 0 && date && !Number.isNaN(date.getTime());
+}
+
 function showAnalysisModal() {
     const period = getReportPeriod();
     const start = period.start;
@@ -3522,7 +3571,16 @@ function showAnalysisModal() {
     let totalRevenueMonth = 0;
     let txCountMonth = 0;
     const customerRevenueMap = {};
+    // This chart uses the customer's saved classification; KPI cards use separate behavior rules.
     const classCountMap = {
+        "Khách mới": 0,
+        "Thường xuyên": 0,
+        "Không thường xuyên": 0,
+        "Chưa liên hệ được": 0,
+        "Không nhu cầu": 0,
+        "Chưa phân loại": 0
+    };
+    const classTransactionCountMap = {
         "Khách mới": 0,
         "Thường xuyên": 0,
         "Không thường xuyên": 0,
@@ -3540,14 +3598,19 @@ function showAnalysisModal() {
     customers.forEach(c => {
         let customerHasTxInMonth = false;
         let customerRevenueInMonth = 0;
+        let customerTransactionCountInMonth = 0;
 
-        if (c.history && c.history.length > 0) {
-            c.history.forEach(tx => {
+        const saleHistory = Array.isArray(c.history) ? c.history.filter(isPositiveSaleTransaction) : [];
+
+        if (saleHistory.length > 0) {
+            saleHistory.forEach(tx => {
                 const txDate = new Date(tx.date);
-                if (txDate >= start && txDate <= end && tx.amount !== 0) {
-                    totalRevenueMonth += tx.amount;
+                const amount = Number(tx.amount);
+                if (txDate >= start && txDate <= end) {
+                    totalRevenueMonth += amount;
                     txCountMonth++;
-                    customerRevenueInMonth += tx.amount;
+                    customerRevenueInMonth += amount;
+                    customerTransactionCountInMonth++;
                     customerHasTxInMonth = true;
                 }
             });
@@ -3556,10 +3619,9 @@ function showAnalysisModal() {
         if (customerHasTxInMonth) {
             totalActiveCust++;
 
-            // Xác định khách mới trong tháng (giao dịch đầu tiên nằm trong tháng được chọn)
-            const dates = c.history.map(tx => new Date(tx.date).getTime());
-            const minDate = new Date(Math.min(...dates));
-            const isNewThisMonth = minDate >= start && minDate <= end;
+            // A first-time buyer is based on the earliest positive sale, not the label on the customer.
+            const firstPurchaseTime = Math.min(...saleHistory.map(tx => new Date(tx.date).getTime()));
+            const isNewThisMonth = firstPurchaseTime >= start.getTime() && firstPurchaseTime <= end.getTime();
 
             if (isNewThisMonth) {
                 newCustCount++;
@@ -3577,25 +3639,23 @@ function showAnalysisModal() {
             };
 
             const classification = c.classification || 'Chưa phân loại';
-            if (classCountMap.hasOwnProperty(classification)) {
-                classCountMap[classification]++;
-            } else {
-                classCountMap["Chưa phân loại"]++;
-            }
+            if (classCountMap[classification] === undefined) classCountMap[classification] = 0;
+            if (classTransactionCountMap[classification] === undefined) classTransactionCountMap[classification] = 0;
+            classCountMap[classification]++;
+            classTransactionCountMap[classification] += customerTransactionCountInMonth;
         }
     });
 
     // Tính toán so sánh với kỳ liền trước (ngày/hôm qua, tuần/tuần trước, tháng/tháng trước, năm/năm trước)
     let prevRevenueMonth = 0;
     customers.forEach(c => {
-        if (c.history && c.history.length > 0) {
-            c.history.forEach(tx => {
-                const txDate = new Date(tx.date);
-                if (txDate >= prevStart && txDate <= prevEnd && tx.amount !== 0) {
-                    prevRevenueMonth += tx.amount;
-                }
-            });
-        }
+        const saleHistory = Array.isArray(c.history) ? c.history.filter(isPositiveSaleTransaction) : [];
+        saleHistory.forEach(tx => {
+            const txDate = new Date(tx.date);
+            if (txDate >= prevStart && txDate <= prevEnd) {
+                prevRevenueMonth += Number(tx.amount);
+            }
+        });
     });
 
     const revDiff = totalRevenueMonth - prevRevenueMonth;
@@ -3616,9 +3676,8 @@ function showAnalysisModal() {
     // Tính toán tổng doanh thu của toàn bộ hệ thống
     const totalWebSales = customers.reduce((sum, c) => sum + (c.sales || 0), 0);
 
-    // Tính toán tỷ lệ phần trăm khách mới/cũ
-    const newCustRatio = totalActiveCust > 0 ? Math.round((newCustCount / totalActiveCust) * 100) : 0;
-    const newCustRevenueRatio = totalRevenueMonth > 0 ? Math.round((newCustRevenue / totalRevenueMonth) * 100) : 0;
+    // These cards describe the whole active customer base, without changing source data.
+    const averageRevenuePerCustomer = totalActiveCust > 0 ? totalRevenueMonth / totalActiveCust : 0;
 
     const returnCustRatio = totalActiveCust > 0 ? Math.round((returningCustCount / totalActiveCust) * 100) : 0;
     const returnCustRevenueRatio = totalRevenueMonth > 0 ? Math.round((returningCustRevenue / totalRevenueMonth) * 100) : 0;
@@ -3629,11 +3688,11 @@ function showAnalysisModal() {
     document.getElementById('kpiRevenueCompare').innerText = revPctStr;
     document.getElementById('kpiRevenueCompare').style.color = compareColor;
     document.getElementById('kpiTxCount').innerText = txCountMonth;
-    document.getElementById('kpiNewCustomers').innerText = newCustCount;
+    document.getElementById('kpiNewCustomers').innerText = totalActiveCust;
 
-    // Cập nhật các thẻ tỷ lệ mới/cũ
-    document.getElementById('kpiNewCustRatio').innerHTML = `${newCustRatio}% <span style="font-size: 12px; font-weight: normal; color: var(--text-muted);">${newCustCount}/${totalActiveCust} KH</span>`;
-    document.getElementById('kpiNewCustRevenueRatio').innerText = `Đóng góp: ${newCustRevenueRatio}% doanh số (${formatCurrency(newCustRevenue)})`;
+    // Cập nhật các thẻ quy mô và hiệu quả khách hàng
+    document.getElementById('kpiNewCustRatio').innerHTML = `${formatCurrency(averageRevenuePerCustomer)} <span style="font-size: 12px; font-weight: normal; color: var(--text-muted);">${totalActiveCust} KH</span>`;
+    document.getElementById('kpiNewCustRevenueRatio').innerText = `Tổng doanh thu: ${formatCurrency(totalRevenueMonth)}`;
 
     document.getElementById('kpiReturnCustRatio').innerHTML = `${returnCustRatio}% <span style="font-size: 12px; font-weight: normal; color: var(--text-muted);">${returningCustCount}/${totalActiveCust} KH</span>`;
     document.getElementById('kpiReturnCustRevenueRatio').innerText = `Đóng góp: ${returnCustRevenueRatio}% doanh số (${formatCurrency(returningCustRevenue)})`;
@@ -3647,14 +3706,13 @@ function showAnalysisModal() {
     function sumRevenueInRange(rStart, rEnd) {
         let rev = 0;
         customers.forEach(c => {
-            if (c.history && c.history.length > 0) {
-                c.history.forEach(tx => {
-                    const txDate = new Date(tx.date);
-                    if (txDate >= rStart && txDate <= rEnd && tx.amount !== 0) {
-                        rev += tx.amount;
-                    }
-                });
-            }
+            const saleHistory = Array.isArray(c.history) ? c.history.filter(isPositiveSaleTransaction) : [];
+            saleHistory.forEach(tx => {
+                const txDate = new Date(tx.date);
+                if (txDate >= rStart && txDate <= rEnd) {
+                    rev += Number(tx.amount);
+                }
+            });
         });
         return rev;
     }
@@ -3720,7 +3778,7 @@ function showAnalysisModal() {
     }
 
     // Create charts
-    createAnalysisCharts(classCountMap, activeCustomersList.slice(0, 5), last12Months.map(m => m.label), monthlyRevenues);
+    createAnalysisCharts(classCountMap, classTransactionCountMap, activeCustomersList.slice(0, 5), last12Months.map(m => m.label), monthlyRevenues);
     // Hiển thị do showReportPageView đảm nhiệm, không set display thủ công ở đây
 }
 
@@ -3737,12 +3795,16 @@ function showProductAnalysisModal() {
     const productCompTitle = document.getElementById('productComparisonTitle');
     if (productCompTitle) productCompTitle.innerText = `Phân Tích Sản Phẩm So Với ${period.compareLabel.charAt(0).toUpperCase() + period.compareLabel.slice(1)}`;
     const productCompPrevTh = document.getElementById('productCompPrevTh');
-    if (productCompPrevTh) productCompPrevTh.innerText = `SL (${period.compareLabel})`;
+    if (productCompPrevTh) productCompPrevTh.innerText = `Lượt (${period.compareLabel})`;
     const productCompCurrTh = document.getElementById('productCompCurrTh');
-    if (productCompCurrTh) productCompCurrTh.innerText = `SL (${getReportTypeName(period.type).toLowerCase()} này)`;
+    if (productCompCurrTh) productCompCurrTh.innerText = `Lượt (${getReportTypeName(period.type).toLowerCase()} này)`;
+    const productCompPrevRevenueTh = document.getElementById('productCompPrevRevenueTh');
+    if (productCompPrevRevenueTh) productCompPrevRevenueTh.innerText = `DT (${period.compareLabel})`;
+    const productCompCurrRevenueTh = document.getElementById('productCompCurrRevenueTh');
+    if (productCompCurrRevenueTh) productCompCurrRevenueTh.innerText = `DT (${getReportTypeName(period.type).toLowerCase()} này)`;
 
     const productStats = {};
-    const prevProductCounts = {};
+    const prevProductStats = {};
     let totalRevenue = 0;
     let totalPurchases = 0;
 
@@ -3754,7 +3816,8 @@ function showProductAnalysisModal() {
         if (c.history && c.history.length > 0) {
             c.history.forEach(tx => {
                 const txDate = new Date(tx.date);
-                if (tx.amount !== 0) {
+                const amount = Number(tx.amount);
+                if (Number.isFinite(amount) && amount !== 0) {
                     const productName = getCanonicalProductName(tx.category || c.category, canonicalMap);
 
                     // Kỳ hiện tại
@@ -3769,15 +3832,19 @@ function showProductAnalysisModal() {
                         }
 
                         productStats[productName].count++;
-                        productStats[productName].revenue += tx.amount;
+                        productStats[productName].revenue += amount;
                         productStats[productName].customers.add(c.customerId);
-                        totalRevenue += tx.amount;
+                        totalRevenue += amount;
                         totalPurchases++;
                     }
 
                     // Kỳ liền trước
                     if (txDate >= startPrev && txDate <= endPrev) {
-                        prevProductCounts[productName] = (prevProductCounts[productName] || 0) + 1;
+                        if (!prevProductStats[productName]) {
+                            prevProductStats[productName] = { count: 0, revenue: 0 };
+                        }
+                        prevProductStats[productName].count++;
+                        prevProductStats[productName].revenue += amount;
                     }
                 }
             });
@@ -3788,7 +3855,10 @@ function showProductAnalysisModal() {
         name: p.name,
         count: p.count,
         revenue: p.revenue,
-        customerCount: p.customers.size
+        customerCount: p.customers.size,
+        averageRevenuePerCustomer: p.customers.size > 0 ? p.revenue / p.customers.size : 0,
+        averageRevenuePerTransaction: p.count > 0 ? p.revenue / p.count : 0,
+        revenueShare: totalRevenue > 0 ? (p.revenue / totalRevenue) * 100 : 0
     }));
     const totalProducts = productsArray.length;
 
@@ -3797,8 +3867,8 @@ function showProductAnalysisModal() {
     document.getElementById('kpiTotalPurchases').innerText = totalPurchases;
     document.getElementById('kpiProductRevenue').innerText = formatCurrency(totalRevenue);
 
-    // Sắp xếp theo số lượt mua
-    const topByCount = [...productsArray].sort((a, b) => b.count - a.count).slice(0, 5);
+    // Sắp xếp theo số lượt giao dịch để phản ánh đúng "bán chạy".
+    const topByTransactions = [...productsArray].sort((a, b) => b.count - a.count || b.revenue - a.revenue).slice(0, 5);
 
     // Sắp xếp theo doanh thu
     const topByRevenue = [...productsArray].sort((a, b) => b.revenue - a.revenue).slice(0, 5);
@@ -3813,9 +3883,13 @@ function showProductAnalysisModal() {
         const tr = document.createElement('tr');
         tr.style.borderBottom = '1px solid #e2e8f0';
         tr.innerHTML = `
-            <td style="width: 45%; padding: 8px 6px; font-weight: 600; color: var(--primary-color); font-size: 13px; overflow: hidden; text-overflow: ellipsis;" title="${escapeHtml(product.name)}">${escapeHtml(product.name)}</td>
-            <td style="width: 20%; padding: 8px 6px; text-align: center; font-weight: 600; font-size: 13px;">${product.count}</td>
-            <td style="width: 35%; padding: 8px 6px; text-align: right; font-weight: bold; color: #10b981; font-size: 13px; white-space: nowrap;">${formatCurrency(product.revenue)}</td>
+            <td style="width: 24%; padding: 8px 6px; font-weight: 600; color: var(--primary-color); font-size: 13px; overflow: hidden; text-overflow: ellipsis;" title="${escapeHtml(product.name)}">${escapeHtml(product.name)}</td>
+            <td style="width: 12%; padding: 8px 6px; text-align: center; font-weight: 600; font-size: 13px;">${product.customerCount}</td>
+            <td style="width: 12%; padding: 8px 6px; text-align: center; font-size: 13px;">${product.count}</td>
+            <td style="width: 17%; padding: 8px 6px; text-align: right; font-weight: bold; color: #10b981; font-size: 13px; white-space: nowrap;">${formatCurrency(product.revenue)}</td>
+            <td style="width: 15%; padding: 8px 6px; text-align: right; font-size: 13px; white-space: nowrap;">${formatCurrency(product.averageRevenuePerCustomer)}</td>
+            <td style="width: 12%; padding: 8px 6px; text-align: right; font-size: 13px; white-space: nowrap;">${formatCurrency(product.averageRevenuePerTransaction)}</td>
+            <td style="width: 8%; padding: 8px 6px; text-align: right; font-size: 13px; white-space: nowrap;">${product.revenueShare.toFixed(1)}%</td>
         `;
         tableBody.appendChild(tr);
     });
@@ -3823,33 +3897,33 @@ function showProductAnalysisModal() {
     // Đổ dữ liệu bảng so sánh với kỳ liền trước
     const allComparisonProductNames = new Set([
         ...Object.keys(productStats),
-        ...Object.keys(prevProductCounts)
+        ...Object.keys(prevProductStats)
     ]);
 
     const comparisonList = Array.from(allComparisonProductNames).map(name => {
-        const prevCount = prevProductCounts[name] || 0;
+        const prevCount = prevProductStats[name] ? prevProductStats[name].count : 0;
+        const prevRevenue = prevProductStats[name] ? prevProductStats[name].revenue : 0;
         const currCount = productStats[name] ? productStats[name].count : 0;
-        const diff = currCount - prevCount;
+        const currRevenue = productStats[name] ? productStats[name].revenue : 0;
+        const revenueDiff = currRevenue - prevRevenue;
 
         let growthRateText = '0%';
-        if (prevCount > 0) {
-            const growthRate = ((currCount - prevCount) / prevCount) * 100;
+        if (prevRevenue !== 0) {
+            const growthRate = (revenueDiff / Math.abs(prevRevenue)) * 100;
             const sign = growthRate > 0 ? '+' : '';
             growthRateText = `${sign}${growthRate.toFixed(0)}%`;
-        } else if (currCount > 0) {
-            growthRateText = '+100%';
+        } else if (currRevenue !== 0) {
+            growthRateText = 'Mới';
         } else {
             growthRateText = '0%';
         }
 
-        let diffText = '0';
-        if (diff > 0) diffText = `+${diff}`;
-        else if (diff < 0) diffText = `${diff}`;
+        const diffText = revenueDiff > 0 ? `+${formatCurrency(revenueDiff)}` : formatCurrency(revenueDiff);
 
         let statusHtml = '';
-        if (diff > 0) {
+        if (revenueDiff > 0) {
             statusHtml = '<span style="color: #16a34a; font-weight: bold;">📈 Tăng</span>';
-        } else if (diff < 0) {
+        } else if (revenueDiff < 0) {
             statusHtml = '<span style="color: #dc2626; font-weight: bold;">📉 Giảm</span>';
         } else {
             statusHtml = '<span style="color: #64748b;">➖ Bằng</span>';
@@ -3859,20 +3933,22 @@ function showProductAnalysisModal() {
             name,
             prevCount,
             currCount,
-            diff,
+            prevRevenue,
+            currRevenue,
+            revenueDiff,
             diffText,
             growthRateText,
             statusHtml
         };
     });
 
-    comparisonList.sort((a, b) => b.currCount - a.currCount || b.diff - a.diff);
+    comparisonList.sort((a, b) => b.currRevenue - a.currRevenue || b.revenueDiff - a.revenueDiff);
 
     const comparisonTableBody = document.getElementById('productComparisonTableBody');
     if (comparisonTableBody) {
         comparisonTableBody.innerHTML = '';
         if (comparisonList.length === 0) {
-            comparisonTableBody.innerHTML = `<tr><td colspan="6" style="text-align: center; color: #94a3b8; padding: 12px;">Không có dữ liệu so sánh</td></tr>`;
+            comparisonTableBody.innerHTML = `<tr><td colspan="8" style="text-align: center; color: #94a3b8; padding: 12px;">Không có dữ liệu so sánh</td></tr>`;
         } else {
             comparisonList.forEach(item => {
                 const tr = document.createElement('tr');
@@ -3881,8 +3957,10 @@ function showProductAnalysisModal() {
                     <td style="padding: 8px 4px; font-weight: 600; color: var(--primary-color); font-size: 13px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;" title="${escapeHtml(item.name)}">${escapeHtml(item.name)}</td>
                     <td style="padding: 8px 4px; text-align: center; font-size: 13px;">${item.prevCount}</td>
                     <td style="padding: 8px 4px; text-align: center; font-weight: bold; font-size: 13px;">${item.currCount}</td>
-                    <td style="padding: 8px 4px; text-align: center; font-weight: 600; font-size: 13px; color: ${item.diff > 0 ? '#16a34a' : (item.diff < 0 ? '#dc2626' : '#475569')};">${item.diffText}</td>
-                    <td style="padding: 8px 4px; text-align: center; font-weight: 600; font-size: 13px; color: ${item.diff > 0 ? '#16a34a' : (item.diff < 0 ? '#dc2626' : '#475569')};">${item.growthRateText}</td>
+                    <td style="padding: 8px 4px; text-align: right; font-size: 13px; white-space: nowrap;">${formatCurrency(item.prevRevenue)}</td>
+                    <td style="padding: 8px 4px; text-align: right; font-weight: bold; font-size: 13px; white-space: nowrap;">${formatCurrency(item.currRevenue)}</td>
+                    <td style="padding: 8px 4px; text-align: right; font-weight: 600; font-size: 13px; white-space: nowrap; color: ${item.revenueDiff > 0 ? '#16a34a' : (item.revenueDiff < 0 ? '#dc2626' : '#475569')};">${item.diffText}</td>
+                    <td style="padding: 8px 4px; text-align: center; font-weight: 600; font-size: 13px; color: ${item.revenueDiff > 0 ? '#16a34a' : (item.revenueDiff < 0 ? '#dc2626' : '#475569')};">${item.growthRateText}</td>
                     <td style="padding: 8px 4px; text-align: center; font-size: 13px;">${item.statusHtml}</td>
                 `;
                 comparisonTableBody.appendChild(tr);
@@ -3891,25 +3969,25 @@ function showProductAnalysisModal() {
     }
 
     // Create charts
-    createProductCharts(topByCount, topByRevenue, productsArray);
+    createProductCharts(topByTransactions, topByRevenue, productsArray);
     // Hiển thị do showReportPageView đảm nhiệm, không set display thủ công ở đây
 }
 
-function createProductCharts(topByCount, topByRevenue, productsArray) {
+function createProductCharts(topByTransactions, topByRevenue, productsArray) {
     // Destroy previous instances
     if (chartTopProductsInstance) chartTopProductsInstance.destroy();
     if (chartTopRevenueProductsInstance) chartTopRevenueProductsInstance.destroy();
     if (chartProductDistributionInstance) chartProductDistributionInstance.destroy();
 
-    // Chart 1: Top sản phẩm theo số lượt mua
+    // Chart 1: Top sản phẩm theo số lượt giao dịch
     const ctx1 = document.getElementById('chartTopProducts').getContext('2d');
     chartTopProductsInstance = new Chart(ctx1, {
         type: 'bar',
         data: {
-            labels: topByCount.map(p => p.name),
+            labels: topByTransactions.map(p => p.name),
             datasets: [{
-                label: 'Số lượt mua',
-                data: topByCount.map(p => p.count),
+                label: 'Lượt giao dịch',
+                data: topByTransactions.map(p => p.count),
                 backgroundColor: '#3b82f6',
                 borderColor: '#2563eb',
                 borderWidth: 1
@@ -3920,7 +3998,15 @@ function createProductCharts(topByCount, topByRevenue, productsArray) {
             maintainAspectRatio: false,
             indexAxis: 'y',
             plugins: {
-                legend: { display: false }
+                legend: { display: false },
+                tooltip: {
+                    callbacks: {
+                        label: context => {
+                            const product = topByTransactions[context.dataIndex];
+                            return ` ${product.count} lượt giao dịch - ${product.customerCount} khách mua`;
+                        }
+                    }
+                }
             }
         }
     });
@@ -3962,9 +4048,10 @@ function createProductCharts(topByCount, topByRevenue, productsArray) {
     // Chart 3: Phân bố sản phẩm theo doanh thu (Doughnut)
     const ctx3 = document.getElementById('chartProductDistribution').getContext('2d');
 
-    // Lấy top 5 sản phẩm và nhóm còn lại
-    const top5Products = [...productsArray].sort((a, b) => b.revenue - a.revenue).slice(0, 5);
-    const othersRevenue = productsArray.slice(5).reduce((sum, p) => sum + p.revenue, 0);
+    // Sort before splitting so "Sản phẩm khác" is the true remainder.
+    const sortedByRevenue = [...productsArray].sort((a, b) => b.revenue - a.revenue);
+    const top5Products = sortedByRevenue.slice(0, 5);
+    const othersRevenue = sortedByRevenue.slice(5).reduce((sum, p) => sum + p.revenue, 0);
 
     const labels = top5Products.map(p => p.name);
     const data = top5Products.map(p => p.revenue);
@@ -4013,7 +4100,7 @@ function createProductCharts(topByCount, topByRevenue, productsArray) {
     });
 }
 
-function createAnalysisCharts(classCounts, topCustomers, trendLabels, trendData) {
+function createAnalysisCharts(classCounts, classTransactionCounts, topCustomers, trendLabels, trendData) {
     // Destroy previous instances
     if (chartClassificationInstance) chartClassificationInstance.destroy();
     if (chartTopCustomersInstance) chartTopCustomersInstance.destroy();
@@ -4050,6 +4137,21 @@ function createAnalysisCharts(classCounts, topCustomers, trendLabels, trendData)
                     labels: {
                         boxWidth: 12,
                         font: { size: 11 }
+                    }
+                },
+                tooltip: {
+                    callbacks: {
+                        title: function (items) {
+                            return items[0]?.label || '';
+                        },
+                        label: function (context) {
+                            const value = Number(context.parsed || 0);
+                            return `Khách hàng: ${value} KH`;
+                        },
+                        afterLabel: function (context) {
+                            const transactionCount = classTransactionCounts[context.label] || 0;
+                            return `Giao dịch: ${transactionCount}`;
+                        }
                     }
                 }
             }
@@ -4780,9 +4882,9 @@ async function exportAnalysisToPDF() {
                         { text: 'SỐ GIAO DỊCH PHÁT SINH\n' + kpiTxCount, style: 'kpi', border: [true, true, true, true] }
                     ],
                     [
-                        { text: 'KHÁCH MỚI PHÁT SINH\n' + kpiNewCustomers, style: 'kpi', border: [true, true, true, true] },
-                        { text: 'KHÁCH MỚI MUA (%)\n' + kpiNewCustRatio, style: 'kpi', border: [true, true, true, true] },
-                        { text: 'KHÁCH CŨ QUAY LẠI (%)\n' + kpiReturnCustRatio, style: 'kpi', border: [true, true, true, true] }
+                        { text: 'TỔNG KHÁCH HÀNG PHÁT SINH\n' + kpiNewCustomers, style: 'kpi', border: [true, true, true, true] },
+                        { text: 'DOANH THU BÌNH QUÂN / KHÁCH\n' + kpiNewCustRatio, style: 'kpi', border: [true, true, true, true] },
+                        { text: 'TỶ TRỌNG KHÁCH QUAY LẠI\n' + kpiReturnCustRatio, style: 'kpi', border: [true, true, true, true] }
                     ]
                 ]
             },
@@ -4822,7 +4924,7 @@ async function exportAnalysisToPDF() {
                 [
                     { text: 'STT', style: 'tableHeader', alignment: 'center' },
                     { text: 'Mã KH', style: 'tableHeader' },
-                    { text: 'Doanh Thu Tăng', style: 'tableHeader', alignment: 'right' }
+                    { text: 'Doanh Thu Trong Kỳ', style: 'tableHeader', alignment: 'right' }
                 ],
                 ...tableData.map(row => [
                     { text: row[0], alignment: 'center' },
@@ -4887,12 +4989,16 @@ async function exportProductAnalysisToPDF() {
         const rows = tableBody.querySelectorAll('tr');
         rows.forEach((row, index) => {
             const cells = row.querySelectorAll('td');
-            if (cells.length >= 3) {
+            if (cells.length >= 7) {
                 tableData.push([
                     (index + 1).toString(),
                     cells[0].textContent.trim(),
                     cells[1].textContent.trim(),
-                    cells[2].textContent.trim()
+                    cells[2].textContent.trim(),
+                    cells[3].textContent.trim(),
+                    cells[4].textContent.trim(),
+                    cells[5].textContent.trim(),
+                    cells[6].textContent.trim()
                 ]);
             }
         });
@@ -4905,14 +5011,16 @@ async function exportProductAnalysisToPDF() {
         const rows = compTableBody.querySelectorAll('tr');
         rows.forEach(row => {
             const cells = row.querySelectorAll('td');
-            if (cells.length >= 6) {
+            if (cells.length >= 8) {
                 compTableData.push([
                     cells[0].textContent.trim(),
                     cells[1].textContent.trim(),
                     cells[2].textContent.trim(),
                     cells[3].textContent.trim(),
                     cells[4].textContent.trim(),
-                    cells[5].textContent.trim()
+                    cells[5].textContent.trim(),
+                    cells[6].textContent.trim(),
+                    cells[7].textContent.trim()
                 ]);
             }
         });
@@ -4936,9 +5044,9 @@ async function exportProductAnalysisToPDF() {
         { text: 'Biểu Đồ Phân Tích Sản Phẩm', style: 'subheader', margin: [0, 20, 0, 10] }
     ];
 
-    // Row 1: Top sản phẩm theo lượt mua và doanh thu
+    // Row 1: Top sản phẩm theo lượt giao dịch và doanh thu
     if (imgTopProducts && imgTopRevenueProducts) {
-        content.push({ text: 'Top 5 Sản Phẩm', style: 'chartTitle', margin: [0, 10, 0, 5] });
+        content.push({ text: 'Top 5 Sản Phẩm Theo Lượt Giao Dịch Và Doanh Thu', style: 'chartTitle', margin: [0, 10, 0, 5] });
         content.push({
             columns: [
                 { image: imgTopProducts, width: 240, alignment: 'center' },
@@ -4951,7 +5059,7 @@ async function exportProductAnalysisToPDF() {
 
     // Row 2: Phân bố sản phẩm
     if (imgProductDistribution) {
-        content.push({ text: 'Tỷ Lệ Sản Phẩm Được Mua', style: 'chartTitle', margin: [0, 10, 0, 5] });
+        content.push({ text: 'Cơ Cấu Doanh Thu Theo Sản Phẩm', style: 'chartTitle', margin: [0, 10, 0, 5] });
         content.push({ image: imgProductDistribution, width: 220, alignment: 'center', margin: [0, 0, 0, 15] });
     }
 
@@ -4964,23 +5072,27 @@ async function exportProductAnalysisToPDF() {
         content.push({
             table: {
                 headerRows: 1,
-                widths: ['25%', '15%', '15%', '15%', '15%', '15%'],
+                widths: ['20%', '8%', '8%', '15%', '15%', '16%', '8%', '10%'],
                 body: [
                     [
                         { text: 'Tên Sản Phẩm', style: 'tableHeader' },
                         { text: compPrevLabel, style: 'tableHeader', alignment: 'center' },
                         { text: compCurrLabel, style: 'tableHeader', alignment: 'center' },
-                        { text: 'Chênh Lệch', style: 'tableHeader', alignment: 'center' },
-                        { text: 'Tỷ Lệ (%)', style: 'tableHeader', alignment: 'center' },
+                        { text: document.getElementById('productCompPrevRevenueTh')?.innerText || 'DT Kỳ Trước', style: 'tableHeader', alignment: 'right' },
+                        { text: document.getElementById('productCompCurrRevenueTh')?.innerText || 'DT Kỳ Này', style: 'tableHeader', alignment: 'right' },
+                        { text: 'Chênh Lệch DT', style: 'tableHeader', alignment: 'right' },
+                        { text: 'Tỷ Lệ DT', style: 'tableHeader', alignment: 'center' },
                         { text: 'Trạng Thái', style: 'tableHeader', alignment: 'center' }
                     ],
                     ...compTableData.map(row => [
                         { text: row[0], color: '#3C4A34', bold: true },
                         { text: row[1], alignment: 'center' },
                         { text: row[2], alignment: 'center', bold: true },
-                        { text: row[3], alignment: 'center' },
-                        { text: row[4], alignment: 'center' },
-                        { text: row[5], alignment: 'center' }
+                        { text: row[3], alignment: 'right' },
+                        { text: row[4], alignment: 'right', bold: true },
+                        { text: row[5], alignment: 'right' },
+                        { text: row[6], alignment: 'center' },
+                        { text: row[7], alignment: 'center' }
                     ])
                 ]
             },
@@ -5002,19 +5114,27 @@ async function exportProductAnalysisToPDF() {
     content.push({
         table: {
             headerRows: 1,
-            widths: ['8%', '42%', '20%', '30%'],
+            widths: ['5%', '22%', '11%', '11%', '17%', '17%', '10%', '7%'],
             body: [
                 [
                     { text: 'STT', style: 'tableHeader', alignment: 'center' },
                     { text: 'Tên Sản Phẩm', style: 'tableHeader' },
-                    { text: 'Số Lượt Mua', style: 'tableHeader', alignment: 'center' },
-                    { text: 'Doanh Thu', style: 'tableHeader', alignment: 'right' }
+                    { text: 'Khách Mua', style: 'tableHeader', alignment: 'center' },
+                    { text: 'Lượt GD', style: 'tableHeader', alignment: 'center' },
+                    { text: 'Doanh Thu', style: 'tableHeader', alignment: 'right' },
+                    { text: 'DT / Khách', style: 'tableHeader', alignment: 'right' },
+                    { text: 'DT / GD', style: 'tableHeader', alignment: 'right' },
+                    { text: 'Tỷ Trọng', style: 'tableHeader', alignment: 'right' }
                 ],
                 ...tableData.map(row => [
                     { text: row[0], alignment: 'center' },
                     { text: row[1], color: '#3C4A34', bold: true },
                     { text: row[2], alignment: 'center', bold: true },
-                    { text: row[3], alignment: 'right', color: '#10b981', bold: true }
+                    { text: row[3], alignment: 'center' },
+                    { text: row[4], alignment: 'right', color: '#10b981', bold: true },
+                    { text: row[5], alignment: 'right' },
+                    { text: row[6], alignment: 'right' },
+                    { text: row[7], alignment: 'right' }
                 ])
             ]
         },
@@ -5031,7 +5151,7 @@ async function exportProductAnalysisToPDF() {
     });
 
     const docDefinition = {
-        pageOrientation: 'portrait',
+        pageOrientation: 'landscape',
         pageSize: 'A4',
         pageMargins: [40, 60, 40, 60],
         content: content,
