@@ -1488,4 +1488,123 @@ input[list]::-webkit-calendar-picker-indicator {
 .badge-chua-lien-he { background-color: #FFFBEB; color: #D97706; border: 1px solid #FDE68A; }
 .badge-khong-nhu-cau { background-color: #FEF2F2; color: #DC2626; border: 1px solid #FECACA; }
 
+/* ========== RESPONSIVE BẢN CHÍNH: tự tối ưu khi mở cùng URL trên điện thoại ========== */
+@media (max-width: 768px) {
+    html, body { max-width: 100%; overflow-x: hidden; }
+    body { padding: 8px; }
+    .container { width: 100%; max-width: 100%; }
+    .main-header { gap: 8px; }
+    .header-left, .header-right, .header-actions { width: 100%; }
+    .header-right { justify-content: space-between; }
+    .nav-tabs { overflow-x: auto; -webkit-overflow-scrolling: touch; }
+    .nav-tab { min-width: 135px; white-space: nowrap; }
+
+    /* Các popup báo cáo trở thành màn hình xem toàn trang trên mobile. */
+    #reportModal.report-page-view,
+    #analysisModal.report-page-view,
+    #productAnalysisModal.report-page-view,
+    #deepAnalysisModal.report-page-view {
+        position: fixed;
+        inset: 0;
+        padding: 0;
+        align-items: stretch;
+        overflow-x: hidden;
+        overflow-y: auto;
+    }
+    #reportModal.report-page-view > .modal-content,
+    #analysisModal.report-page-view > .modal-content,
+    #productAnalysisModal.report-page-view > .modal-content,
+    #deepAnalysisModal.report-page-view > .modal-content {
+        width: 100vw !important;
+        max-width: 100vw !important;
+        min-height: 100dvh;
+        max-height: none !important;
+        margin: 0;
+        padding: 14px 10px !important;
+        border-radius: 0;
+        overflow: visible !important;
+    }
+
+    #reportModal .modal-content > div,
+    #analysisModal .modal-content > div,
+    #productAnalysisModal .modal-content > div,
+    #deepAnalysisModal .modal-content > div { max-width: 100%; }
+    #reportModal .modal-content > div:nth-of-type(2),
+    #analysisModal .modal-content > div:nth-of-type(2),
+    #productAnalysisModal .modal-content > div:nth-of-type(2) {
+        overflow-x: auto !important;
+        -webkit-overflow-scrolling: touch;
+    }
+
+    /* Header báo cáo: tiêu đề, bộ lọc và nút đóng không bị ép ngang. */
+    #reportModal .modal-content > div:first-child,
+    #analysisModal .modal-content > div:first-child,
+    #productAnalysisModal .modal-content > div:first-child {
+        align-items: flex-start !important;
+        flex-direction: column;
+        gap: 9px !important;
+    }
+    #reportModal .modal-content > div:first-child > div:last-child,
+    #analysisModal .modal-content > div:first-child > div:last-child,
+    #productAnalysisModal .modal-content > div:first-child > div:last-child {
+        width: 100%;
+        justify-content: flex-start;
+    }
+    #reportModal select, #reportModal input[type="date"] { max-width: 100%; min-height: 44px; }
+    #reportModal .modal-actions { flex-wrap: wrap; gap: 8px; }
+    #reportModal .modal-actions .btn { flex: 1 1 100%; min-width: 0 !important; width: 100% !important; }
+
+    /* KPI và biểu đồ của hai phân tích xếp dọc trên màn hình hẹp. */
+    #analysisModal [style*="grid-template-columns: repeat(3, 1fr)"],
+    #productAnalysisModal [style*="grid-template-columns: repeat(3, 1fr)"] {
+        grid-template-columns: repeat(2, minmax(0, 1fr)) !important;
+    }
+    #analysisModal [style*="grid-template-columns: 1fr 1fr"],
+    #productAnalysisModal [style*="grid-template-columns: 1fr 1fr"] {
+        grid-template-columns: 1fr !important;
+    }
+    #analysisModal canvas, #productAnalysisModal canvas { max-width: 100%; }
+    #analysisModal table, #productAnalysisModal table, #reportModal table { font-size: 12px !important; }
+    #analysisModal .modal-actions, #productAnalysisModal .modal-actions { margin-top: 12px !important; }
+    #analysisModal .modal-actions .btn, #productAnalysisModal .modal-actions .btn { width: 100% !important; min-width: 0 !important; }
+
+    #activityHistoryModal .modal-content,
+    #reportTypeModal .modal-content { width: 100%; max-width: 100%; max-height: 100dvh; border-radius: 0; }
+    #reportTypeModal .action-option-card { min-height: 64px; }
+
+    /* Phân tích AI chuyên sâu: vẫn dùng cùng modal, chỉ đổi cách xếp trên mobile. */
+    #deepAnalysisModal.report-page-view > .deep-analysis-modal-content { padding: 10px !important; }
+    #deepAnalysisModal .deep-analysis-header { display: block; }
+    #deepAnalysisModal .deep-analysis-header-actions { margin-top: 10px; width: 100%; }
+    #deepAnalysisModal .deep-analysis-period-select,
+    #deepAnalysisModal .deep-analysis-refresh-btn { flex: 1 1 100%; min-height: 44px; }
+    #deepAnalysisModal .deep-analysis-kpi-grid-4,
+    #deepAnalysisModal .deep-analysis-kpi-grid-3,
+    #deepAnalysisModal .deep-analysis-comparison-grid-4 { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+    #deepAnalysisModal .deep-analysis-table-wrap { max-width: 100%; overflow-x: auto; }
+    #deepAnalysisModal .deep-analysis-table { min-width: 680px; }
+}
+
+@media (max-width: 480px) {
+    .table-header-flex h2 { font-size: 16px; }
+    .header-actions .btn { flex: 1 1 100%; }
+    #dashboardKpiGrid { grid-template-columns: 1fr !important; }
+    #analysisModal [style*="grid-template-columns: repeat(3, 1fr)"],
+    #productAnalysisModal [style*="grid-template-columns: repeat(3, 1fr)"],
+    #deepAnalysisModal .deep-analysis-kpi-grid-4,
+    #deepAnalysisModal .deep-analysis-kpi-grid-3,
+    #deepAnalysisModal .deep-analysis-comparison-grid,
+    #deepAnalysisModal .deep-analysis-comparison-grid-4 { grid-template-columns: 1fr !important; }
+    #analysisModal .modal-content,
+    #productAnalysisModal .modal-content { padding-left: 8px !important; padding-right: 8px !important; }
+    #analysisModal .modal-content > div:nth-of-type(2),
+    #productAnalysisModal .modal-content > div:nth-of-type(2) { padding-right: 0 !important; }
+    #reportModal .modal-content { padding-left: 8px !important; padding-right: 8px !important; }
+    #reportModal .modal-actions .btn { font-size: 13px; }
+    #deepAnalysisModal .deep-analysis-title { font-size: 18px; }
+    #deepAnalysisModal .deep-analysis-section { padding: 12px; }
+    #deepAnalysisModal .weekday-heatmap { grid-template-columns: repeat(3, minmax(65px, 1fr)); }
+    #deepAnalysisModal .monthday-heatmap { grid-template-columns: repeat(5, minmax(42px, 1fr)); }
+}
+
 
