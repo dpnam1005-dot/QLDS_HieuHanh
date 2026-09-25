@@ -1,0 +1,34 @@
+// ========== CẤU HÌNH VÀ TIỆN ÍCH DÙNG CHUNG ==========
+// Chỉ cung cấp hằng số/tiện ích dùng chung; không ghi database và không sửa dữ liệu.
+
+// Escape data values before placing them inside an HTML template.
+function escapeHtml(value) {
+    return String(value ?? '').replace(/[&<>"']/g, char => ({
+        '&': '&amp;',
+        '<': '&lt;',
+        '>': '&gt;',
+        '"': '&quot;',
+        "'": '&#39;'
+    })[char]);
+}
+
+// Giữ nguyên cấu hình giao diện hiện tại để không đổi hành vi ứng dụng.
+const APP_CONFIG = Object.freeze({
+    supabaseTable: 'Quan ly ban hang',
+    fetchTimeoutMs: 10000,
+    storageKeys: Object.freeze({
+        customersCache: 'qlds_customers_cache_v3',
+        currentPage: 'qlds_current_page'
+    })
+});
+
+function parseJsonArray(value) {
+    if (Array.isArray(value)) return value;
+    if (typeof value !== 'string' || !value.trim()) return [];
+    try {
+        const parsed = JSON.parse(value);
+        return Array.isArray(parsed) ? parsed : [];
+    } catch {
+        return [];
+    }
+}
