@@ -661,8 +661,8 @@
                             <span style="font-size: 24px;">🧠</span>
                         </div>
                         <div class="action-option-content">
-                            <div class="action-option-title" style="color: #6D28D9;">Phân tích chuyên sâu</div>
-                            <div class="action-option-desc">Dự báo KPI, RFM, khách sắp mất, Pareto, giá trị đơn, bán kèm, chu kỳ mua lại, heatmap, hàng trả</div>
+                            <div class="action-option-title" style="color: #6D28D9;">Phân tích AI chuyên sâu</div>
+                            <div class="action-option-desc">Dự báo KPI, RFM, khách sắp mất, Pareto, giá trị đơn, bán kèm, chu kỳ mua lại, heatmap</div>
                         </div>
                     </div>
                 </div>
@@ -741,6 +741,113 @@
                 <button type="button" id="btnBackFromReport" class="btn btn-secondary report-back-button"
                     style="width: auto; min-width: 100px; margin-left: auto;">← Trở lại</button>
             </div>
+        </div>
+    </div>
+
+    <!-- Modal Phân tích AI chuyên sâu: chỉ đọc customers[].history[], không ghi database -->
+    <div id="deepAnalysisModal" class="modal-overlay">
+        <div class="modal-content deep-analysis-modal-content">
+            <div class="deep-analysis-header">
+                <div>
+                    <h3 class="deep-analysis-title">🧠 Phân tích AI chuyên sâu</h3>
+                    <div id="deepAnalysisPeriodLabel" class="deep-analysis-subtitle">Phân tích tự động từ dữ liệu giao dịch hiện có</div>
+                </div>
+                <div class="deep-analysis-header-actions">
+                    <select id="deepAnalysisMonthSelect" class="deep-analysis-period-select" aria-label="Chọn tháng phân tích"></select>
+                    <button type="button" id="btnRefreshDeepAnalysis" class="deep-analysis-refresh-btn">↻ Cập nhật phân tích</button>
+                    <span id="btnCloseDeepAnalysisModal" class="deep-analysis-close">&times;</span>
+                </div>
+            </div>
+
+            <div class="deep-analysis-readonly-note">
+                🔒 Chế độ chỉ đọc: các chỉ số dưới đây được tính từ dữ liệu đang có, không thêm/sửa/xóa/cập nhật bất kỳ dữ liệu nào trên database.
+            </div>
+
+            <div class="deep-analysis-scroll">
+                <section class="deep-analysis-section deep-analysis-hero-section">
+                    <div class="deep-analysis-section-heading">
+                        <div>
+                            <h4>1. Dự báo cuối tháng so với KPI 650M</h4>
+                            <p>Doanh thu thuần = giao dịch dương trừ giao dịch âm; không nhân theo số lượng sản phẩm.</p>
+                        </div>
+                        <span id="deepForecastStatus" class="deep-analysis-status-badge">Đang tính...</span>
+                    </div>
+                    <div class="deep-analysis-kpi-grid deep-analysis-kpi-grid-4">
+                        <div class="deep-analysis-kpi-card"><span>Doanh thu đã có</span><strong id="deepKpiRevenue">0 ₫</strong><small id="deepKpiRevenueSub">0 ngày đã qua</small></div>
+                        <div class="deep-analysis-kpi-card"><span>Dự báo cuối tháng</span><strong id="deepKpiForecast">0 ₫</strong><small id="deepKpiForecastSub">Theo tốc độ hiện tại</small></div>
+                        <div class="deep-analysis-kpi-card"><span>Còn thiếu để đạt 650M</span><strong id="deepKpiGap">0 ₫</strong><small id="deepKpiGapSub">Mục tiêu tháng</small></div>
+                        <div class="deep-analysis-kpi-card"><span>Cần bán mỗi ngày còn lại</span><strong id="deepKpiDailyNeed">0 ₫</strong><small id="deepKpiDailyNeedSub">0 ngày còn lại</small></div>
+                    </div>
+                    <div class="deep-analysis-progress-track"><div id="deepKpiProgress" class="deep-analysis-progress-bar"></div></div>
+                    <div id="deepForecastInsight" class="deep-analysis-insight"></div>
+                </section>
+
+                <section class="deep-analysis-section">
+                    <div class="deep-analysis-section-heading"><div><h4>2. So sánh cùng kỳ năm trước</h4><p>Đặt cạnh tháng trước để hạn chế hiểu sai do mùa vụ.</p></div></div>
+                    <div class="deep-analysis-comparison-grid">
+                        <div class="deep-analysis-compare-card"><span>Tháng đang xem</span><strong id="deepCompareCurrent">0 ₫</strong><small id="deepCompareCurrentLabel">-</small></div>
+                        <div class="deep-analysis-compare-card"><span>Tháng trước</span><strong id="deepComparePrevious">0 ₫</strong><small id="deepComparePreviousDelta">-</small></div>
+                        <div class="deep-analysis-compare-card"><span>Cùng tháng năm trước</span><strong id="deepCompareYearAgo">0 ₫</strong><small id="deepCompareYearAgoDelta">-</small></div>
+                    </div>
+                    <div id="deepSeasonalityInsight" class="deep-analysis-insight"></div>
+                </section>
+
+                <section class="deep-analysis-section">
+                    <div class="deep-analysis-section-heading"><div><h4>3. Phân tích RFM khách hàng</h4><p>Recency = số ngày từ lần mua gần nhất; Frequency = số đợt mua; Monetary = tổng tiền mua.</p></div></div>
+                    <div class="deep-analysis-kpi-grid deep-analysis-kpi-grid-4">
+                        <div class="deep-analysis-kpi-card"><span>VIP</span><strong id="deepRfmVipCount">0</strong><small>R≥4, F≥4, M≥4</small></div>
+                        <div class="deep-analysis-kpi-card"><span>Trung thành</span><strong id="deepRfmLoyalCount">0</strong><small>Mua lại thường xuyên</small></div>
+                        <div class="deep-analysis-kpi-card"><span>Có nguy cơ rời bỏ</span><strong id="deepRfmRiskCount">0</strong><small>Đã giảm tần suất mua</small></div>
+                        <div class="deep-analysis-kpi-card"><span>Đã ngủ đông</span><strong id="deepRfmDormantCount">0</strong><small>Quá lâu chưa mua</small></div>
+                    </div>
+                    <div class="deep-analysis-table-wrap">
+                        <table class="deep-analysis-table deep-table-rfm"><colgroup><col class="deep-col-rfm-customer"><col class="deep-col-rfm-group"><col class="deep-col-rfm-recency"><col class="deep-col-rfm-frequency"><col class="deep-col-rfm-money"><col class="deep-col-rfm-date"></colgroup><thead><tr><th>Khách hàng</th><th>Nhóm RFM</th><th class="deep-center">Recency</th><th class="deep-center">Frequency</th><th class="deep-money">Monetary</th><th class="deep-center">Lần mua gần nhất</th></tr></thead><tbody id="deepRfmTableBody"></tbody></table>
+                    </div>
+                </section>
+
+                <section class="deep-analysis-section">
+                    <div class="deep-analysis-section-heading"><div><h4>4. Cảnh báo khách sắp mất</h4><p>Ưu tiên khách từng mua ít nhất 2 lần nhưng đã quá 60 ngày chưa phát sinh.</p></div></div>
+                    <div class="deep-analysis-table-wrap"><table class="deep-analysis-table deep-table-churn"><colgroup><col class="deep-col-churn-customer"><col class="deep-col-churn-status"><col class="deep-col-churn-days"><col class="deep-col-churn-orders"><col class="deep-col-churn-money"><col class="deep-col-churn-action"></colgroup><thead><tr><th>Khách hàng</th><th>Trạng thái</th><th class="deep-center">Ngày chưa mua</th><th class="deep-center">Số đợt đã mua</th><th class="deep-money">Doanh số trước đây</th><th>Gợi ý</th></tr></thead><tbody id="deepChurnTableBody"></tbody></table></div>
+                </section>
+
+                <section class="deep-analysis-section">
+                    <div class="deep-analysis-section-heading"><div><h4>5. Tỷ lệ tập trung doanh thu (Pareto)</h4><p>Cho biết cần bao nhiêu khách để tạo ra 80% doanh thu lịch sử đến kỳ đang xem.</p></div></div>
+                    <div class="deep-analysis-comparison-grid deep-analysis-comparison-grid-4">
+                        <div class="deep-analysis-compare-card"><span>Số KH tạo 80% doanh thu</span><strong id="deepParetoCustomerCount">0</strong><small id="deepParetoCustomerShare">0% tổng KH mua</small></div>
+                        <div class="deep-analysis-compare-card"><span>Tỷ trọng nhóm dẫn đầu</span><strong id="deepParetoTopShare">0%</strong><small>10% khách hàng đầu</small></div>
+                        <div class="deep-analysis-compare-card"><span>Doanh thu phân tích</span><strong id="deepParetoRevenue">0 ₫</strong><small>Tổng Monetary</small></div>
+                        <div class="deep-analysis-compare-card"><span>Mức rủi ro tập trung</span><strong id="deepParetoRisk">-</strong><small id="deepParetoRiskSub">-</small></div>
+                    </div>
+                    <div class="deep-analysis-table-wrap"><table class="deep-analysis-table deep-table-pareto"><colgroup><col class="deep-col-pareto-rank"><col class="deep-col-pareto-customer"><col class="deep-col-pareto-money"><col class="deep-col-pareto-share"><col class="deep-col-pareto-cumulative"></colgroup><thead><tr><th class="deep-center">Hạng</th><th>Khách hàng</th><th class="deep-money">Doanh số</th><th class="deep-center">Tỷ trọng</th><th class="deep-center">Lũy kế</th></tr></thead><tbody id="deepParetoTableBody"></tbody></table></div>
+                </section>
+
+                <section class="deep-analysis-section">
+                    <div class="deep-analysis-section-heading"><div><h4>6. Giá trị trung bình mỗi đơn</h4><p>Mỗi đơn/đợt được gom theo <code>batchId</code>; thiếu <code>batchId</code> thì tính từng dòng là một đơn. Doanh thu không nhân theo quantity.</p></div></div>
+                    <div id="deepAovInsight" class="deep-analysis-insight"></div>
+                    <div class="deep-analysis-table-wrap"><table class="deep-analysis-table deep-table-aov"><colgroup><col class="deep-col-aov-month"><col class="deep-col-aov-revenue"><col class="deep-col-aov-orders"><col class="deep-col-aov-average"><col class="deep-col-aov-change"></colgroup><thead><tr><th>Tháng</th><th class="deep-money">Doanh thu</th><th class="deep-center">Số đợt mua</th><th class="deep-money">Giá trị TB/đợt</th><th class="deep-center">So với tháng trước</th></tr></thead><tbody id="deepAovTableBody"></tbody></table></div>
+                </section>
+
+                <section class="deep-analysis-section">
+                    <div class="deep-analysis-section-heading"><div><h4>7. Sản phẩm hay mua kèm</h4><p>Các cặp sản phẩm xuất hiện trong cùng một đợt nhập, dùng để gợi ý bán chéo.</p></div></div>
+                    <div class="deep-analysis-table-wrap"><table class="deep-analysis-table deep-table-pairs"><colgroup><col class="deep-col-pair-products"><col class="deep-col-pair-orders"><col class="deep-col-pair-customers"><col class="deep-col-pair-money"><col class="deep-col-pair-action"></colgroup><thead><tr><th>Cặp sản phẩm</th><th class="deep-center">Số đợt cùng mua</th><th class="deep-center">Số khách</th><th class="deep-money">Doanh thu các đợt</th><th>Gợi ý bán chéo</th></tr></thead><tbody id="deepPairTableBody"></tbody></table></div>
+                </section>
+
+                <section class="deep-analysis-section">
+                    <div class="deep-analysis-section-heading"><div><h4>8. Chu kỳ mua lại của từng khách</h4><p>Dự đoán ngày mua tiếp theo dựa trên khoảng cách trung bình giữa các đợt mua.</p></div></div>
+                    <div class="deep-analysis-table-wrap"><table class="deep-analysis-table deep-table-repurchase"><colgroup><col class="deep-col-repurchase-customer"><col class="deep-col-repurchase-orders"><col class="deep-col-repurchase-cycle"><col class="deep-col-repurchase-last"><col class="deep-col-repurchase-next"><col class="deep-col-repurchase-status"></colgroup><thead><tr><th>Khách hàng</th><th class="deep-center">Số đợt mua</th><th class="deep-center">Chu kỳ TB</th><th class="deep-center">Lần mua gần nhất</th><th class="deep-center">Dự kiến mua tiếp</th><th>Trạng thái</th></tr></thead><tbody id="deepRepurchaseTableBody"></tbody></table></div>
+                </section>
+
+                <section class="deep-analysis-section">
+                    <div class="deep-analysis-section-heading"><div><h4>9. Heatmap thời điểm phát sinh doanh thu</h4><p>Màu đậm hơn biểu thị doanh thu dương tập trung hơn trong kỳ đang xem.</p></div></div>
+                    <h5 class="deep-analysis-subheading">Theo ngày trong tuần</h5>
+                    <div id="deepWeekdayHeatmap" class="deep-heatmap weekday-heatmap"></div>
+                    <h5 class="deep-analysis-subheading">Theo ngày trong tháng</h5>
+                    <div id="deepDayOfMonthHeatmap" class="deep-heatmap monthday-heatmap"></div>
+                </section>
+
+            </div>
+
+            <div class="deep-analysis-footer"><span>Nhận định được tính tự động từ dữ liệu hiện có để hỗ trợ quyết định; nên đối chiếu với thực tế trước khi hành động.</span><button type="button" id="btnBackFromDeepAnalysis" class="btn btn-secondary">← Trở lại</button></div>
         </div>
     </div>
 
@@ -1318,6 +1425,10 @@
         </div>
     </div>
 
+    <!-- Phân tích AI chuyên sâu được tách riêng; file này chỉ đọc dữ liệu hiện có. -->
+    <script src="js/deep-analysis.js"></script>
+    <!-- Báo cáo định kỳ và điều hướng báo cáo; chỉ đọc dữ liệu khi hiển thị. -->
+    <script src="js/reports.js"></script>
     <script src="script.js"></script>
 </body>
 

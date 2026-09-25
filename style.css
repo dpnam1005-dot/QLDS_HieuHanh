@@ -251,6 +251,118 @@ th, td { padding: 10px 12px; text-align: left; border-bottom: 1px solid var(--bo
 .table-filler-row { pointer-events: none; cursor: default; }
 .table-filler-row td { border-bottom: 1px solid var(--border-color); }
 tbody tr.table-filler-row:hover { background-color: transparent; cursor: default; }
+
+/* Phân tích AI chuyên sâu: lớp hiển thị chỉ đọc, không liên quan tới luồng ghi dữ liệu */
+.deep-analysis-modal-content {
+    width: 1440px;
+    max-width: 97vw;
+    max-height: 94vh;
+    display: flex;
+    flex-direction: column;
+    background: #f8fafc;
+    padding: 22px 24px;
+    border-radius: 14px;
+}
+.deep-analysis-header { display: flex; justify-content: space-between; align-items: center; gap: 14px; flex-wrap: wrap; border-bottom: 1px solid var(--border-color); padding-bottom: 14px; }
+.deep-analysis-title { margin: 0; color: #6d28d9; font-size: 20px; }
+.deep-analysis-subtitle { margin-top: 3px; color: var(--text-muted); font-size: 12px; }
+.deep-analysis-header-actions { display: flex; align-items: center; gap: 8px; flex-wrap: wrap; }
+.deep-analysis-period-select { padding: 8px 10px; border: 1px solid #c4b5fd; border-radius: 7px; background: #fff; color: #4c1d95; font-weight: 700; }
+.deep-analysis-refresh-btn { border: 1px solid #c4b5fd; border-radius: 7px; padding: 8px 12px; background: #ede9fe; color: #5b21b6; cursor: pointer; font-weight: 700; }
+.deep-analysis-refresh-btn:hover { background: #ddd6fe; }
+.deep-analysis-close { cursor: pointer; font-size: 26px; color: var(--text-muted); font-weight: 700; line-height: 1; padding: 0 4px; }
+.deep-analysis-readonly-note { margin: 12px 0; padding: 10px 12px; border-radius: 8px; background: #ecfdf5; border: 1px solid #a7f3d0; color: #065f46; font-size: 12.5px; line-height: 1.5; }
+.deep-analysis-scroll { overflow-y: auto; flex: 1; padding: 0 3px 4px 0; }
+.deep-analysis-section { background: #fff; border: 1px solid #e2e8f0; border-radius: 10px; padding: 17px; margin-bottom: 16px; box-shadow: 0 1px 2px rgba(15,23,42,.03); }
+.deep-analysis-hero-section { border-color: #ddd6fe; background: linear-gradient(180deg, #faf5ff 0%, #fff 100%); }
+.deep-analysis-section-heading { display: flex; justify-content: space-between; align-items: flex-start; gap: 12px; margin-bottom: 13px; }
+.deep-analysis-section h4 { margin: 0; color: #1e293b; font-size: 15px; }
+.deep-analysis-section-heading p { margin: 4px 0 0; color: #64748b; font-size: 12px; line-height: 1.5; }
+.deep-analysis-section code { background: #f1f5f9; padding: 1px 4px; border-radius: 4px; color: #7c3aed; }
+.deep-analysis-status-badge { display: inline-flex; align-items: center; border-radius: 999px; background: #ede9fe; color: #6d28d9; padding: 5px 10px; font-size: 12px; font-weight: 800; white-space: nowrap; }
+.deep-analysis-kpi-grid { display: grid; gap: 10px; margin-bottom: 13px; }
+.deep-analysis-kpi-grid-4 { grid-template-columns: repeat(4, minmax(0, 1fr)); }
+.deep-analysis-kpi-grid-3 { grid-template-columns: repeat(3, minmax(0, 1fr)); }
+.deep-analysis-kpi-card, .deep-analysis-compare-card { min-width: 0; padding: 12px; border-radius: 8px; border: 1px solid #e2e8f0; background: #fff; }
+.deep-analysis-kpi-card span, .deep-analysis-compare-card span { display: block; color: #64748b; font-size: 11px; font-weight: 800; margin-bottom: 4px; }
+.deep-analysis-kpi-card strong, .deep-analysis-compare-card strong { display: block; color: #334155; font-size: 18px; line-height: 1.25; overflow-wrap: anywhere; }
+.deep-analysis-kpi-card small, .deep-analysis-compare-card small { display: block; margin-top: 5px; color: #94a3b8; font-size: 11px; line-height: 1.35; }
+.deep-analysis-progress-track { width: 100%; height: 10px; overflow: hidden; border-radius: 999px; background: #e2e8f0; }
+.deep-analysis-progress-bar { width: 0; height: 100%; border-radius: inherit; background: linear-gradient(90deg, #8b5cf6, #10b981); transition: width .25s ease; }
+.deep-analysis-insight { margin-top: 11px; padding: 9px 11px; border-left: 3px solid #8b5cf6; border-radius: 5px; background: #f8fafc; color: #475569; font-size: 12.5px; line-height: 1.55; }
+.deep-analysis-comparison-grid { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 10px; }
+.deep-analysis-comparison-grid-4 { grid-template-columns: repeat(4, minmax(0, 1fr)); }
+.deep-analysis-compare-card strong { color: #0f766e; }
+.deep-analysis-table-wrap { overflow: auto; max-height: 360px; border: 1px solid #e2e8f0; border-radius: 7px; }
+.deep-analysis-table { width: 100%; min-width: 760px; border-collapse: collapse; table-layout: fixed; font-size: 12.5px; }
+.deep-analysis-table th,
+.deep-analysis-table td { box-sizing: border-box; }
+.deep-analysis-table th { position: sticky; top: 0; z-index: 1; padding: 9px 8px; background: #f8fafc; color: #475569; border-bottom: 2px solid #e2e8f0; text-transform: none; letter-spacing: 0; font-size: 11.5px; white-space: nowrap; vertical-align: middle; }
+.deep-analysis-table td { padding: 9px 8px; border-bottom: 1px solid #eef2f7; color: #334155; white-space: normal; line-height: 1.35; vertical-align: middle; overflow: visible; text-overflow: clip; overflow-wrap: anywhere; }
+.deep-analysis-table tr:last-child td { border-bottom: 0; }
+.deep-analysis-table tr:hover td { background: #faf5ff; }
+.deep-analysis-table .deep-money { text-align: right; white-space: nowrap; font-weight: 700; }
+.deep-analysis-table .deep-center { text-align: center; white-space: nowrap; }
+.deep-analysis-table th.deep-money { text-align: right; }
+.deep-analysis-table th.deep-center { text-align: center; }
+.deep-analysis-table col.deep-col-rfm-customer { width: 28%; }
+.deep-analysis-table col.deep-col-rfm-group { width: 18%; }
+.deep-analysis-table col.deep-col-rfm-recency { width: 12%; }
+.deep-analysis-table col.deep-col-rfm-frequency { width: 12%; }
+.deep-analysis-table col.deep-col-rfm-money { width: 16%; }
+.deep-analysis-table col.deep-col-rfm-date { width: 14%; }
+.deep-analysis-table col.deep-col-churn-customer { width: 27%; }
+.deep-analysis-table col.deep-col-churn-status { width: 14%; }
+.deep-analysis-table col.deep-col-churn-days { width: 13%; }
+.deep-analysis-table col.deep-col-churn-orders { width: 12%; }
+.deep-analysis-table col.deep-col-churn-money { width: 16%; }
+.deep-analysis-table col.deep-col-churn-action { width: 18%; }
+.deep-analysis-table col.deep-col-pareto-rank { width: 9%; }
+.deep-analysis-table col.deep-col-pareto-customer { width: 39%; }
+.deep-analysis-table col.deep-col-pareto-money { width: 22%; }
+.deep-analysis-table col.deep-col-pareto-share { width: 15%; }
+.deep-analysis-table col.deep-col-pareto-cumulative { width: 15%; }
+.deep-analysis-table col.deep-col-aov-month { width: 18%; }
+.deep-analysis-table col.deep-col-aov-revenue { width: 20%; }
+.deep-analysis-table col.deep-col-aov-orders { width: 15%; }
+.deep-analysis-table col.deep-col-aov-average { width: 22%; }
+.deep-analysis-table col.deep-col-aov-change { width: 25%; }
+.deep-analysis-table col.deep-col-pair-products { width: 28%; }
+.deep-analysis-table col.deep-col-pair-orders { width: 14%; }
+.deep-analysis-table col.deep-col-pair-customers { width: 12%; }
+.deep-analysis-table col.deep-col-pair-money { width: 19%; }
+.deep-analysis-table col.deep-col-pair-action { width: 27%; }
+.deep-analysis-table col.deep-col-repurchase-customer { width: 27%; }
+.deep-analysis-table col.deep-col-repurchase-orders { width: 12%; }
+.deep-analysis-table col.deep-col-repurchase-cycle { width: 12%; }
+.deep-analysis-table col.deep-col-repurchase-last { width: 15%; }
+.deep-analysis-table col.deep-col-repurchase-next { width: 15%; }
+.deep-analysis-table col.deep-col-repurchase-status { width: 19%; }
+.deep-analysis-table col.deep-col-negative-product { width: 42%; }
+.deep-analysis-table col.deep-col-negative-count { width: 18%; }
+.deep-analysis-table col.deep-col-negative-money { width: 22%; }
+.deep-analysis-table col.deep-col-negative-share { width: 18%; }
+.deep-analysis-subheading { margin: 13px 0 8px; color: #475569; font-size: 12px; }
+.deep-heatmap { display: grid; gap: 5px; }
+.weekday-heatmap { grid-template-columns: repeat(7, minmax(70px, 1fr)); }
+.monthday-heatmap { grid-template-columns: repeat(16, minmax(45px, 1fr)); }
+.deep-heatmap-cell { min-height: 52px; display: flex; flex-direction: column; justify-content: center; align-items: center; border-radius: 6px; border: 1px solid rgba(148,163,184,.22); color: #334155; text-align: center; padding: 4px; font-size: 10px; overflow: hidden; }
+.deep-heatmap-cell strong { font-size: 11px; }
+.deep-heatmap-cell small { font-size: 9px; margin-top: 2px; }
+.deep-analysis-footer { display: flex; justify-content: space-between; align-items: center; gap: 12px; border-top: 1px solid var(--border-color); padding-top: 13px; margin-top: 8px; color: #64748b; font-size: 11.5px; }
+.deep-analysis-footer .btn { width: auto; min-width: 100px; flex-shrink: 0; }
+
+@media (max-width: 900px) {
+    .deep-analysis-kpi-grid-4, .deep-analysis-comparison-grid-4 { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+    .deep-analysis-kpi-grid-3, .deep-analysis-comparison-grid { grid-template-columns: 1fr; }
+    .deep-analysis-footer { align-items: flex-start; flex-direction: column; }
+}
+@media (max-width: 620px) {
+    .deep-analysis-modal-content { max-width: 100vw; max-height: 100vh; padding: 14px; border-radius: 0; }
+    .deep-analysis-kpi-grid-4, .deep-analysis-kpi-grid-3 { grid-template-columns: 1fr; }
+    .weekday-heatmap { grid-template-columns: repeat(4, minmax(65px, 1fr)); }
+    .monthday-heatmap { grid-template-columns: repeat(8, minmax(42px, 1fr)); }
+}
 .nowrap { white-space: nowrap; }
 .col-company { min-width: 200px; }
 .col-notes { min-width: 150px; }
@@ -373,7 +485,8 @@ tbody tr:hover { background-color: #F8F3ED; cursor: pointer; }
 /* Các popup báo cáo/phân tích hiển thị như trang riêng */
 #reportModal.report-page-view,
 #analysisModal.report-page-view,
-#productAnalysisModal.report-page-view {
+#productAnalysisModal.report-page-view,
+#deepAnalysisModal.report-page-view {
     position: fixed;
     inset: 0;
     display: flex !important;
@@ -386,7 +499,8 @@ tbody tr:hover { background-color: #F8F3ED; cursor: pointer; }
 }
 #reportModal.report-page-view > .modal-content,
 #analysisModal.report-page-view > .modal-content,
-#productAnalysisModal.report-page-view > .modal-content {
+#productAnalysisModal.report-page-view > .modal-content,
+#deepAnalysisModal.report-page-view > .modal-content {
     width: 100% !important;
     max-width: 1840px !important;
     max-height: none !important;
@@ -397,7 +511,8 @@ tbody tr:hover { background-color: #F8F3ED; cursor: pointer; }
 }
 #reportModal.report-page-view .report-back-button,
 #analysisModal.report-page-view .report-back-button,
-#productAnalysisModal.report-page-view .report-back-button {
+#productAnalysisModal.report-page-view .report-back-button,
+#deepAnalysisModal.report-page-view .report-back-button {
     display: inline-flex;
     align-items: center;
     gap: 6px;
@@ -409,7 +524,7 @@ tbody tr:hover { background-color: #F8F3ED; cursor: pointer; }
 @media (min-width: 1400px) and (min-height: 700px) {
     .modal-content, .customer-form-modal, .update-sales-modal { max-height: 86vh; }
 }
-#reportModal, #analysisModal { z-index: 1000; }
+#reportModal, #analysisModal, #deepAnalysisModal { z-index: 1000; }
 #customerActionModal { z-index: 1100; }
 #editCustomerInfoModal, #updateSalesModal, #customerFormModal { z-index: 1150; }
 #historyModal { z-index: 1180; }
