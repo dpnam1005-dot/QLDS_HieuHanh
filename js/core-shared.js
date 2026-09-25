@@ -22,6 +22,9 @@ const APP_CONFIG = Object.freeze({
     })
 });
 
+const SB_URL = 'https://ozpaslchfhcdechmrhlv.supabase.co';
+const SB_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Im96cGFzbGNoZmhjZGVjaG1yaGx2Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODMxMTQxMDUsImV4cCI6MjA5ODY5MDEwNX0.Ekzyal8ona_CjoBkHV19iaDm20DXqCV4MJanSseZ1lo';
+
 function parseJsonArray(value) {
     if (Array.isArray(value)) return value;
     if (typeof value !== 'string' || !value.trim()) return [];
