@@ -16,7 +16,15 @@ function getDashboardPeriod() {
     const end = new Date(now.getFullYear(), now.getMonth() + 1, 0); end.setHours(23, 59, 59, 999);
     const prevStart = new Date(now.getFullYear(), now.getMonth() - 1, 1); prevStart.setHours(0, 0, 0, 0);
     const prevEnd = new Date(now.getFullYear(), now.getMonth(), 0); prevEnd.setHours(23, 59, 59, 999);
-    return { type: 'month', start, end, prevStart, prevEnd, label: 'Tháng này', compareLabel: 'tháng trước' };
+    return {
+        type: 'month',
+        start,
+        end,
+        prevStart,
+        prevEnd,
+        label: `Tháng ${now.getMonth() + 1}`,
+        compareLabel: 'tháng trước'
+    };
 }
 
 function sumHistoryInRange(rStart, rEnd) {
