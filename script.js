@@ -2002,6 +2002,9 @@ document.getElementById('btnCloseDeepAnalysisModal')?.addEventListener('click', 
 document.getElementById('btnBackFromDeepAnalysis')?.addEventListener('click', () => returnFromReportPage('deepAnalysisModal'));
 document.getElementById('btnRefreshDeepAnalysis')?.addEventListener('click', showDeepAnalysis);
 document.getElementById('deepAnalysisMonthSelect')?.addEventListener('change', showDeepAnalysis);
+document.getElementById('deepProductVelocitySort')?.addEventListener('change', () => {
+    if (deepAnalysisLastResult?.period) deepRenderProductVelocity(deepAnalysisLastResult.period);
+});
 document.getElementById('btnPrintDeepAnalysisPDF')?.addEventListener('click', exportDeepAnalysisToPDF);
 
 document.getElementById('btnBackFromReport')?.addEventListener('click', () => returnFromReportPage('reportModal'));

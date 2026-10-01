@@ -340,6 +340,17 @@ tbody tr.table-filler-row:hover { background-color: transparent; cursor: default
 .deep-analysis-table col.deep-col-repurchase-last { width: 15%; }
 .deep-analysis-table col.deep-col-repurchase-next { width: 15%; }
 .deep-analysis-table col.deep-col-repurchase-status { width: 19%; }
+.deep-analysis-table col.deep-col-product-velocity-rank { width: 9%; }
+.deep-analysis-table col.deep-col-product-velocity-name { width: 30%; }
+.deep-analysis-table col.deep-col-product-velocity-quantity { width: 16%; }
+.deep-analysis-table col.deep-col-product-velocity-orders { width: 18%; }
+.deep-analysis-table col.deep-col-product-velocity-revenue { width: 20%; }
+.deep-analysis-table col.deep-col-product-velocity-customers { width: 12%; }
+.deep-table-product-velocity { min-width: 620px; }
+.deep-product-ranking-toolbar { display: flex; align-items: center; justify-content: space-between; gap: 12px; margin-top: 13px; }
+.deep-product-ranking-toolbar .deep-analysis-subheading { margin: 0; }
+.deep-product-ranking-toolbar label { color: #475569; font-size: 12px; font-weight: 700; white-space: nowrap; }
+.deep-product-ranking-select { margin-left: 5px; padding: 7px 9px; border: 1px solid #cbd5e1; border-radius: 6px; background: #fff; color: #334155; font-weight: 600; }
 .deep-analysis-table col.deep-col-negative-product { width: 42%; }
 .deep-analysis-table col.deep-col-negative-count { width: 18%; }
 .deep-analysis-table col.deep-col-negative-money { width: 22%; }
@@ -1585,6 +1596,8 @@ input[list]::-webkit-calendar-picker-indicator {
     #deepAnalysisModal .deep-analysis-kpi-grid-3,
     #deepAnalysisModal .deep-analysis-comparison-grid-4 { grid-template-columns: repeat(2, minmax(0, 1fr)); }
     #deepAnalysisModal .deep-analysis-table-wrap { max-width: 100%; overflow-x: auto; }
+    #deepAnalysisModal .deep-product-ranking-toolbar { align-items: flex-start; flex-direction: column; gap: 6px; }
+    #deepAnalysisModal .deep-product-ranking-select { margin-left: 0; }
     #deepAnalysisModal .deep-analysis-table { min-width: 680px; }
 }
 

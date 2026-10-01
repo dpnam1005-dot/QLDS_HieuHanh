@@ -846,6 +846,27 @@
                     <div id="deepDayOfMonthHeatmap" class="deep-heatmap monthday-heatmap"></div>
                 </section>
 
+                <section class="deep-analysis-section">
+                    <div class="deep-analysis-section-heading"><div><h4>10. Sản phẩm bán chạy nhất và sản phẩm bán chậm</h4><p>Xếp hạng theo tổng số lượng bán trong kỳ đang xem; giao dịch âm/hoàn trả không tính vào số lượng.</p></div></div>
+                    <div class="deep-analysis-comparison-grid deep-analysis-comparison-grid-4">
+                        <div class="deep-analysis-compare-card"><span>Sản phẩm bán chạy nhất</span><strong id="deepBestSellingProduct">-</strong><small id="deepBestSellingProductSub">0 sản phẩm</small></div>
+                        <div class="deep-analysis-compare-card"><span>Sản phẩm bán chậm nhất</span><strong id="deepSlowSellingProduct">-</strong><small id="deepSlowSellingProductSub">0 sản phẩm</small></div>
+                        <div class="deep-analysis-compare-card"><span>Tổng số lượng bán</span><strong id="deepProductVelocityQuantity">0</strong><small id="deepProductVelocityQuantitySub">Trong kỳ đang xem</small></div>
+                        <div class="deep-analysis-compare-card"><span>Số sản phẩm phát sinh</span><strong id="deepProductVelocityCount">0</strong><small>Sản phẩm có giao dịch dương</small></div>
+                    </div>
+                    <div id="deepProductVelocityInsight" class="deep-analysis-insight"></div>
+                    <div class="deep-product-ranking-toolbar">
+                        <h5 class="deep-analysis-subheading">Xếp hạng hàng hóa</h5>
+                        <label for="deepProductVelocitySort">Sắp xếp:
+                            <select id="deepProductVelocitySort" class="deep-product-ranking-select">
+                                <option value="desc">Cao đến thấp</option>
+                                <option value="asc">Thấp đến cao</option>
+                            </select>
+                        </label>
+                    </div>
+                    <div class="deep-analysis-table-wrap"><table class="deep-analysis-table deep-table-product-velocity"><colgroup><col class="deep-col-product-velocity-rank"><col class="deep-col-product-velocity-name"><col class="deep-col-product-velocity-quantity"><col class="deep-col-product-velocity-orders"><col class="deep-col-product-velocity-revenue"><col class="deep-col-product-velocity-customers"></colgroup><thead><tr><th class="deep-center">Hạng</th><th>Sản phẩm</th><th class="deep-center">Số lượng</th><th class="deep-center">Số giao dịch</th><th class="deep-money">Doanh thu</th><th class="deep-center">Số khách</th></tr></thead><tbody id="deepProductVelocityTableBody"></tbody></table></div>
+                </section>
+
             </div>
 
             <div class="deep-analysis-footer"><span>Nhận định được tính tự động từ dữ liệu hiện có để hỗ trợ quyết định; nên đối chiếu với thực tế trước khi hành động.</span><button type="button" id="btnBackFromDeepAnalysis" class="btn btn-secondary">← Trở lại</button></div>
