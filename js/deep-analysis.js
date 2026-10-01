@@ -411,6 +411,176 @@ function populateDeepMonthSelect() {
     if (Array.from(select.options).some(option => option.value === currentValue)) select.value = currentValue;
 }
 
+function deepPdfCellText(cell) {
+    return String(cell?.innerText || cell?.textContent || '').replace(/\s+/g, ' ').trim() || '-';
+}
+
+function deepPdfTable(table) {
+    if (!table) return null;
+    const headers = Array.from(table.querySelectorAll('thead th')).map(deepPdfCellText);
+    const rows = Array.from(table.querySelectorAll('tbody tr')).map(row =>
+        Array.from(row.querySelectorAll('td')).map(deepPdfCellText)
+    ).filter(row => row.length);
+    if (!headers.length || !rows.length) return null;
+    return {
+        table: {
+            headerRows: 1,
+            widths: headers.map(() => '*'),
+            body: [
+                headers.map(text => ({ text, style: 'deepPdfTableHeader' })),
+                ...rows.map(row => headers.map((_, index) => ({ text: row[index] || '-', style: 'deepPdfTableCell' })))
+            ]
+        },
+        layout: {
+            hLineWidth: () => 0.4,
+            vLineWidth: () => 0.4,
+            hLineColor: () => '#dbe3ee',
+            vLineColor: () => '#dbe3ee',
+            paddingLeft: () => 5,
+            paddingRight: () => 5,
+            paddingTop: () => 4,
+            paddingBottom: () => 4
+        },
+        margin: [0, 0, 0, 10]
+    };
+}
+
+function deepPdfCards(section) {
+    const cards = Array.from(section.querySelectorAll('.deep-analysis-kpi-card, .deep-analysis-compare-card'));
+    if (!cards.length) return null;
+    const cardNodes = cards.map(card => {
+        const label = deepPdfCellText(card.querySelector('span'));
+        const value = deepPdfCellText(card.querySelector('strong'));
+        const sub = deepPdfCellText(card.querySelector('small'));
+        return { text: `${label}\n${value}\n${sub}`, style: 'deepPdfCard' };
+    });
+    const columns = Math.min(4, Math.max(1, cards.length));
+    const rows = [];
+    for (let index = 0; index < cardNodes.length; index += columns) {
+        const row = cardNodes.slice(index, index + columns);
+        while (row.length < columns) row.push({ text: '', style: 'deepPdfCard' });
+        rows.push(row);
+    }
+    return {
+        table: { widths: Array(columns).fill('*'), body: rows },
+        layout: 'noBorders',
+        margin: [0, 0, 0, 10]
+    };
+}
+
+function deepPdfHeatmap(heatmap) {
+    const cells = Array.from(heatmap?.querySelectorAll(':scope > .deep-heatmap-cell') || []);
+    if (!cells.length) return null;
+    const cellNodes = cells.map(cell => ({ text: deepPdfCellText(cell), style: 'deepPdfHeatmapCell' }));
+    const columns = Math.min(8, Math.max(1, cells.length));
+    const rows = [];
+    for (let index = 0; index < cellNodes.length; index += columns) {
+        const row = cellNodes.slice(index, index + columns);
+        while (row.length < columns) row.push({ text: '', style: 'deepPdfHeatmapCell' });
+        rows.push(row);
+    }
+    return {
+        table: { widths: Array(columns).fill('*'), body: rows },
+        layout: {
+            hLineWidth: () => 0.4,
+            vLineWidth: () => 0.4,
+            hLineColor: () => '#ddd6fe',
+            vLineColor: () => '#ddd6fe',
+            paddingLeft: () => 4,
+            paddingRight: () => 4,
+            paddingTop: () => 4,
+            paddingBottom: () => 4
+        },
+        margin: [0, 0, 0, 10]
+    };
+}
+
+function exportDeepAnalysisToPDF() {
+    if (!window.pdfMake) {
+        alert('Không thể tải công cụ tạo PDF. Vui lòng kiểm tra kết nối mạng rồi thử lại.');
+        return;
+    }
+    const modal = document.getElementById('deepAnalysisModal');
+    const contentRoot = modal?.querySelector('.deep-analysis-modal-content');
+    if (!contentRoot) return;
+
+    const title = deepPdfCellText(contentRoot.querySelector('.deep-analysis-title')) || 'Phân tích AI chuyên sâu';
+    const period = deepPdfCellText(document.getElementById('deepAnalysisPeriodLabel'));
+    const sections = Array.from(contentRoot.querySelectorAll('.deep-analysis-section'));
+    const content = [
+        { text: title, style: 'deepPdfTitle', margin: [0, 0, 0, 4] },
+        { text: period, style: 'deepPdfMeta', margin: [0, 0, 0, 12] },
+        { text: deepPdfCellText(contentRoot.querySelector('.deep-analysis-readonly-note')), style: 'deepPdfNote', margin: [0, 0, 0, 14] }
+    ];
+
+    sections.forEach((section, sectionIndex) => {
+        const heading = section.querySelector('.deep-analysis-section-heading h4');
+        const description = section.querySelector('.deep-analysis-section-heading p');
+        const status = section.querySelector('.deep-analysis-section-heading .deep-analysis-status-badge');
+        const headingText = deepPdfCellText(heading);
+        if (headingText) {
+            const headingNode = { text: headingText, style: 'deepPdfSectionHeading', margin: [0, 0, 0, 3] };
+            if (sectionIndex) headingNode.pageBreak = 'before';
+            content.push(headingNode);
+        }
+        if (description) content.push({ text: deepPdfCellText(description), style: 'deepPdfDescription', margin: [0, 0, 0, 7] });
+        if (status) content.push({ text: `Trạng thái: ${deepPdfCellText(status)}`, style: 'deepPdfStatus', margin: [0, 0, 0, 7] });
+
+        const cards = deepPdfCards(section);
+        if (cards) content.push(cards);
+
+        const progress = section.querySelector('#deepKpiProgress');
+        if (progress) {
+            const width = String(progress.style.width || '').trim();
+            if (width) content.push({ text: `Tiến độ KPI: ${width}`, style: 'deepPdfDescription', margin: [0, 0, 0, 7] });
+        }
+
+        section.querySelectorAll('.deep-analysis-insight').forEach(insight => {
+            const text = deepPdfCellText(insight);
+            if (text !== '-') content.push({ text, style: 'deepPdfInsight', margin: [0, 0, 0, 8] });
+        });
+
+        section.querySelectorAll('table.deep-analysis-table').forEach(table => {
+            const pdfTable = deepPdfTable(table);
+            if (pdfTable) content.push(pdfTable);
+        });
+
+        section.querySelectorAll('.deep-heatmap').forEach(heatmap => {
+            const label = heatmap.id === 'deepWeekdayHeatmap' ? 'Theo ngày trong tuần' : 'Theo ngày trong tháng';
+            content.push({ text: label, style: 'deepPdfSubheading', margin: [0, 2, 0, 5] });
+            const pdfHeatmap = deepPdfHeatmap(heatmap);
+            if (pdfHeatmap) content.push(pdfHeatmap);
+        });
+    });
+
+    const footerNote = contentRoot.querySelector('.deep-analysis-footer span');
+    if (footerNote) content.push({ text: deepPdfCellText(footerNote), style: 'deepPdfNote', margin: [0, 8, 0, 0] });
+
+    const monthValue = document.getElementById('deepAnalysisMonthSelect')?.value || 'bao_cao';
+    const fileName = `Phan_Tich_AI_Chuyen_Sau_${monthValue.replace(/[^0-9-]/g, '_')}.pdf`;
+    pdfMake.createPdf({
+        pageOrientation: 'landscape',
+        pageSize: 'A4',
+        pageMargins: [24, 28, 24, 28],
+        content,
+        styles: {
+            deepPdfTitle: { fontSize: 18, bold: true, color: '#6d28d9', alignment: 'center' },
+            deepPdfMeta: { fontSize: 10, color: '#64748b', alignment: 'center' },
+            deepPdfNote: { fontSize: 9, color: '#475569', italics: true, lineHeight: 1.25 },
+            deepPdfSectionHeading: { fontSize: 13, bold: true, color: '#1e293b' },
+            deepPdfDescription: { fontSize: 9, color: '#64748b', lineHeight: 1.2 },
+            deepPdfStatus: { fontSize: 9, bold: true, color: '#6d28d9' },
+            deepPdfInsight: { fontSize: 9, color: '#334155', fillColor: '#f8fafc', margin: [5, 5, 5, 5], lineHeight: 1.25 },
+            deepPdfSubheading: { fontSize: 10, bold: true, color: '#475569' },
+            deepPdfCard: { fontSize: 8.5, color: '#334155', fillColor: '#f8fafc', margin: [5, 6, 5, 6], lineHeight: 1.2 },
+            deepPdfTableHeader: { fontSize: 7.5, bold: true, color: '#475569', fillColor: '#f1f5f9' },
+            deepPdfTableCell: { fontSize: 7.2, color: '#334155', lineHeight: 1.15 },
+            deepPdfHeatmapCell: { fontSize: 7.5, color: '#334155', alignment: 'center', fillColor: '#f5f3ff', margin: [3, 4, 3, 4] }
+        },
+        defaultStyle: { fontSize: 9 }
+    }).download(fileName);
+}
+
 function showDeepAnalysis() {
     populateDeepMonthSelect();
     const period = deepGetPeriod();
@@ -427,7 +597,7 @@ function showDeepAnalysis() {
     const progress = Math.max(0, Math.min(100, (current.net / DEEP_ANALYSIS_KPI_TARGET) * 100));
     deepAnalysisLastResult = { period, current, previous, yearAgo, forecast, gap, dailyNeed };
 
-    deepSetText('deepAnalysisPeriodLabel', `${period.label} • Đến ${deepFormatDate(period.asOf)} • Chỉ đọc dữ liệu hiện có`);
+    deepSetText('deepAnalysisPeriodLabel', `${period.label} • Đến ${deepFormatDate(period.asOf)}`);
     deepSetText('deepKpiRevenue', formatCurrency(current.net));
     deepSetText('deepKpiRevenueSub', `${daysElapsed}/${daysInMonth} ngày đã qua • Dương ${formatCurrency(current.gross)} • Âm ${formatCurrency(current.negative)}`);
     deepSetText('deepKpiForecast', formatCurrency(forecast));
