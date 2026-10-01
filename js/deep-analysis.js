@@ -394,6 +394,61 @@ function deepRenderHeatmap(period) {
     if (dayEl) dayEl.innerHTML = cells(days, '');
 }
 
+function deepRenderProductVelocity(period) {
+    const startTime = period.start.getTime();
+    const endTime = period.end.getTime();
+    const productMap = new Map();
+    const transactions = deepReadTransactions(period.asOf).filter(item => item.amount > 0 && item.date.getTime() >= startTime && item.date.getTime() <= endTime);
+
+    transactions.forEach(item => {
+        const name = item.product || 'Không rõ';
+        const key = typeof normalizeProductKey === 'function' ? normalizeProductKey(name) : name.toLocaleLowerCase();
+        if (!productMap.has(key)) {
+            productMap.set(key, { name, quantity: 0, transactions: 0, revenue: 0, customers: new Set() });
+        }
+        const product = productMap.get(key);
+        const rawQuantity = Number(item.tx?.quantity);
+        const quantity = Number.isInteger(rawQuantity) && rawQuantity > 0 ? rawQuantity : 1;
+        product.quantity += quantity;
+        product.transactions += 1;
+        product.revenue += item.amount;
+        product.customers.add(item.customerKey);
+    });
+
+    const products = Array.from(productMap.values());
+    const bestSelling = [...products].sort((a, b) => b.quantity - a.quantity || b.revenue - a.revenue || b.transactions - a.transactions);
+    const slowSelling = [...products].sort((a, b) => a.quantity - b.quantity || a.revenue - b.revenue || a.transactions - b.transactions);
+    const totalQuantity = products.reduce((sum, item) => sum + item.quantity, 0);
+
+    const best = bestSelling[0];
+    const slow = slowSelling[0];
+    deepSetText('deepBestSellingProduct', best?.name || '-');
+    deepSetText('deepBestSellingProductSub', best ? `${best.quantity.toLocaleString('vi-VN')} sản phẩm • ${formatCurrency(best.revenue)}` : 'Chưa có dữ liệu');
+    deepSetText('deepSlowSellingProduct', slow?.name || '-');
+    deepSetText('deepSlowSellingProductSub', slow ? `${slow.quantity.toLocaleString('vi-VN')} sản phẩm • ${formatCurrency(slow.revenue)}` : 'Chưa có dữ liệu');
+    deepSetText('deepProductVelocityQuantity', totalQuantity.toLocaleString('vi-VN'));
+    deepSetText('deepProductVelocityQuantitySub', `${transactions.length} giao dịch dương`);
+    deepSetText('deepProductVelocityCount', products.length);
+
+    const insight = document.getElementById('deepProductVelocityInsight');
+    if (insight) {
+        insight.innerHTML = best && slow
+            ? `<strong>${escapeHtml(best.name)}</strong> đang dẫn đầu với <strong>${best.quantity.toLocaleString('vi-VN')} sản phẩm</strong>. <strong>${escapeHtml(slow.name)}</strong> bán chậm nhất với ${slow.quantity.toLocaleString('vi-VN')} sản phẩm; nên xem xét điều chỉnh tồn kho, giá hoặc chương trình bán kèm.`
+            : 'Chưa có giao dịch dương trong kỳ để xếp hạng sản phẩm.';
+    }
+
+    const sortSelect = document.getElementById('deepProductVelocitySort');
+    const descending = !sortSelect || sortSelect.value !== 'asc';
+    const rankedProducts = [...products].sort((a, b) => {
+        const quantityDiff = descending ? b.quantity - a.quantity : a.quantity - b.quantity;
+        return quantityDiff || (descending ? b.revenue - a.revenue : a.revenue - b.revenue) || (descending ? b.transactions - a.transactions : a.transactions - b.transactions) || a.name.localeCompare(b.name, 'vi');
+    });
+    const body = document.getElementById('deepProductVelocityTableBody');
+    if (body) {
+        body.innerHTML = rankedProducts.length ? rankedProducts.slice(0, 30).map((item, index) => `<tr><td class="deep-center">${index + 1}</td><td><strong>${escapeHtml(item.name)}</strong></td><td class="deep-center">${item.quantity.toLocaleString('vi-VN')}</td><td class="deep-center">${item.transactions}</td><td class="deep-money">${formatCurrency(item.revenue)}</td><td class="deep-center">${item.customers.size}</td></tr>`).join('') : deepEmptyRow(6, 'Chưa có sản phẩm phát sinh trong kỳ.');
+    }
+}
+
 function populateDeepMonthSelect() {
     const select = document.getElementById('deepAnalysisMonthSelect');
     if (!select) return;
@@ -630,4 +685,5 @@ function showDeepAnalysis() {
     deepRenderPairs(period);
     deepRenderRepurchase(period);
     deepRenderHeatmap(period);
+    deepRenderProductVelocity(period);
 }
