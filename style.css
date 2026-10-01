@@ -270,6 +270,8 @@ tbody tr.table-filler-row:hover { background-color: transparent; cursor: default
 .deep-analysis-period-select { padding: 8px 10px; border: 1px solid #c4b5fd; border-radius: 7px; background: #fff; color: #4c1d95; font-weight: 700; }
 .deep-analysis-refresh-btn { border: 1px solid #c4b5fd; border-radius: 7px; padding: 8px 12px; background: #ede9fe; color: #5b21b6; cursor: pointer; font-weight: 700; }
 .deep-analysis-refresh-btn:hover { background: #ddd6fe; }
+.deep-analysis-print-btn { border: 1px solid #86efac; border-radius: 7px; padding: 8px 12px; background: #f0fdf4; color: #166534; cursor: pointer; font-weight: 700; }
+.deep-analysis-print-btn:hover { background: #dcfce7; }
 .deep-analysis-close { cursor: pointer; font-size: 26px; color: var(--text-muted); font-weight: 700; line-height: 1; padding: 0 4px; }
 .deep-analysis-readonly-note { margin: 12px 0; padding: 10px 12px; border-radius: 8px; background: #ecfdf5; border: 1px solid #a7f3d0; color: #065f46; font-size: 12.5px; line-height: 1.5; }
 .deep-analysis-scroll { overflow-y: auto; flex: 1; padding: 0 3px 4px 0; }
@@ -1577,7 +1579,8 @@ input[list]::-webkit-calendar-picker-indicator {
     #deepAnalysisModal .deep-analysis-header { display: block; }
     #deepAnalysisModal .deep-analysis-header-actions { margin-top: 10px; width: 100%; }
     #deepAnalysisModal .deep-analysis-period-select,
-    #deepAnalysisModal .deep-analysis-refresh-btn { flex: 1 1 100%; min-height: 44px; }
+    #deepAnalysisModal .deep-analysis-refresh-btn,
+    #deepAnalysisModal .deep-analysis-print-btn { flex: 1 1 100%; min-height: 44px; }
     #deepAnalysisModal .deep-analysis-kpi-grid-4,
     #deepAnalysisModal .deep-analysis-kpi-grid-3,
     #deepAnalysisModal .deep-analysis-comparison-grid-4 { grid-template-columns: repeat(2, minmax(0, 1fr)); }
